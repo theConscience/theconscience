@@ -11,9 +11,14 @@ https://docs.djangoproject.com/en/1.9/ref/settings/
 """
 
 import os
+import sys
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+PROJECT_PATH = os.path.normpath(os.path.dirname(__file__))
+
+sys.path.append(PROJECT_PATH)
 
 
 # Quick-start development settings - unsuitable for production
@@ -37,6 +42,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'helloworld',
+    'helloworld2.apps.Helloworld2Config',
 ]
 
 MIDDLEWARE_CLASSES = [
@@ -77,7 +84,7 @@ WSGI_APPLICATION = 'theconscience.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',   # 'django.db.backends.sqlite3',
-        'NAME': 'site_1_db',             # os.path.join(BASE_DIR, 'db.sqlite3'),
+        'NAME': 'theconscience_dev1',             # os.path.join(BASE_DIR, 'db.sqlite3'),
         'USER': 'katar',                        # Not used with sqlite3.
         'PASSWORD': '1qaz@WSX',                 # Not used with sqlite3.
         'HOST': '',  # Set to empty string for localhost. Not used with sqlite3.
@@ -123,3 +130,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.9/howto/static-files/
 
 STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(PROJECT_PATH, 'static')
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(PROJECT_PATH, 'media')
