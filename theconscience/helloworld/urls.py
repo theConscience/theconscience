@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from django.conf.urls import patterns, url, include
+from . import views
 
-urlpatterns = patterns('helloworld.views',
-    url(r'^$', 'index', name='index'),
-)    
+urlpatterns = [
+    url(r'^$', views.index, name='index'),
+]
