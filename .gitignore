@@ -9,7 +9,7 @@ uwsgi_params
 logs/
 
 # project config
-theconscience/settings.py
+theconscience/settings_local.py
 
 
 
