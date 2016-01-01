@@ -1,0 +1,164 @@
+{% extends "martial/base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Martial arts list" %}{% endblock title %}
+
+{% block css %}
+{{ block.super }}
+  <style>
+    .col-xs-6:nth-of-type(even) {
+      background-color: bisque;
+    }
+    ul.default-list.martial-arts-list > li > a:nth-child(2) {
+      color: tomato;
+    }
+  </style>  
+{% endblock css %}
+    
+
+{% block js %}
+{{ block.super }}
+  <script>
+    (function() {
+      $('ul.martial-arts-list').on('click', '.edit-martial-art-link', function(event) {
+        event.preventDefault();
+      });
+      var martialArtModal = $('#editMartialArtModal');
+      // при ооткрытии модального окна для редактирования объекта
+      martialArtModal.on('show.bs.modal', function(event) {
+        var button = $(event.relatedTarget); // Button that triggered the modal
+        var recipient = button.data('url'); // Extract info from data-* attributes
+        // If necessary, you could initiate an AJAX request here (and then do the updating in a callback).
+        // Update the modal's content. We'll use jQuery here, but you could use a data binding library or other methods instead.
+        $.get(recipient, function(answer_data) {
+          console.log(answer_data);
+          var typeofanswer = typeof answer_data;
+          console.log(typeofanswer);
+          martialArtModal.find('.modal-body form').html(answer_data);
+        });
+        /* modal.find('.modal-title').text('New message to ' + recipient);*/
+      });
+      
+      // подготовка к отправке формы редактирования объекта
+      var editForm = $('form.martial-art-edit-form');
+      var editFormSubmitButton = $('.modal-footer submit');
+      console.log('editForm = ' + editForm);
+      console.log('editFormSubmitButton = ' + editFormSubmitButton);
+      // связываем кнопку отправки и форму (для IE)
+      editFormSubmitButton.click(function(){
+        editForm.submit();
+      });
+      // отправка формы редактирования объекта
+      editForm.submit(function(event) {
+        event.preventDefault();
+        var update_url = $(this).find('input[name=update_url]').val();
+        console.log('update_url = ' + update_url);
+        var form_data = $(this).serialize();
+        console.log('form_data = ' + form_data);
+        $.post(update_url, form_data, function(answer_data) {
+          console.log(answer_data);
+          var alert = $('.modal .modal-header .alert');
+          var alertText = alert.find('.alert-text');
+          alertText.html('');
+          if (answer_data['success']) {
+            var answer = answer_data['success'];
+            alert.removeClass('hidden-xs-up').removeClass('alert-danger').addClass('alert-success');
+          } else if (answer_data['error']) {
+            var answer = answer_data['error'];
+            alert.removeClass('hidden-xs-up').removeClass('alert-success').addClass('alert-danger');
+          }
+          alertText.html(answer);
+        });
+      });
+
+      var deleteInstanceButton = $('.btn-delete-martial-art');
+      deleteInstanceButton.click(function() {
+        var check = confirm('Do you really want to delete this item?');
+        if (check) {
+          var delete_url = editForm.find('input[name=delete_url]').val();
+          $.post(delete_url, {}, function(answer_data) {
+            if (answer_data['close']) {
+              martialArtModal.modal('hide');
+              location.reload();
+            } else {
+              var alert = $('.modal .modal-header .alert');
+              var alertText = alert.find('.alert-text');
+              alertText.html('');
+              var answer = 'something goes wrong...';
+              alert.removeClass('hidden-xs-up').removeClass('alert-success').addClass('alert-danger');
+              alertText.html(answer);
+            }
+          });
+        }
+      });
+
+    })();
+  </script>  
+{% endblock js %}
+
+
+{% block main_content %}
+<strong>Martial arts!</strong>
+{% if martial_arts_list %}
+<ul class="default-list martial-arts-list">
+  {% for art in martial_arts_list %}
+  <li title="{{ art.art_type }}"><a class="edit-martial-art-link" href="#" data-toggle="modal" data-target="#editMartialArtModal" data-url="{% url 'martial_art_edit' martial_art_pk=art.id %}">{{ art.title }}</a> <a class="edit-martial-art-link" href="#" data-toggle="modal" data-target="#editMartialArtModal" data-url="{% url 'martial_art_edit_cb' martial_art_pk=art.id %}">edit</a></li>
+  {% endfor %}
+</ul>
+{% endif %}
+<button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#collapseForm" aria-expanded="false" aria-controls="collapseForm">
+  Add martial art
+</button>
+<hr>
+<div class="collapse" id="collapseForm">
+  <div class="row">
+    <div class="col-xs-6">
+      <form class="form" action="{% url 'martial_art_add' %}" method="POST">
+      {% csrf_token %}
+        {{ martial_art_form.as_p }}
+        <input type="submit" class="btn btn-normal" value="send">
+      </form>
+    </div>
+    <div class="col-xs-6">
+      <form class="form" action="{% url 'martial_art_add_cb' %}" method="POST">
+      {% csrf_token %}
+        {{ martial_art_form.as_p }}
+        <input type="submit" class="btn btn-normal" value="send">
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock main_content %}      
+
+
+{% block modal_window %}
+<div class="modal fade" id="editMartialArtModal" tabindex="-1" role="dialog" aria-labelledby="martialArtLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <h4 class="modal-title" id="martialArtLabel">Edit Martial Art</h4>
+        <div class="alert alert-dismissible fade in hidden-xs-up" role="alert">
+          <!-- <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button> -->
+          <span class="alert-text"></span>
+        </div>
+      </div>
+      <div class="modal-body">
+        <form action="" class="martial-art-edit-form" id="modal_edit_form">
+        {% csrf_token %}
+        <!-- сюда добавляем форму из AJAX-ответа -->
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button type="submit" class="btn btn-primary" form="modal_edit_form">Submit</button>
+        <button type="button" class="btn btn-danger btn-delete-martial-art">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock modal_window %}

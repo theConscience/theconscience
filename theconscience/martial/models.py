@@ -25,6 +25,10 @@ class MartialArt(models.Model):
     def __unicode__(self):
         return u'%s' % self.title
 
+    class Meta:
+        verbose_name = _('Marial Art')
+        verbose_name_plural = _('Martial Arts')
+
     # def set_country(self):
     #     if self.tag:
     #       if self.tag == 'django' or self.tag == 'python':

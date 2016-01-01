@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'theconscience',
     'helloworld',
     'helloworld2.apps.Helloworld2Config',
     'martial',
@@ -55,7 +56,12 @@ MIDDLEWARE_CLASSES = [
     'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
 ]
+
+LOCALE_PATHS = (
+    os.path.join(PROJECT_PATH, 'templates/martial/locale'), 
+)
 
 ROOT_URLCONF = 'theconscience.urls'
 
@@ -72,6 +78,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'django.core.context_processors.static',
+                'django.core.context_processors.i18n',
             ],
         },
     },

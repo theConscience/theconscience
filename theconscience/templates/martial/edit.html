@@ -1,0 +1,10 @@
+{% load theconscience_extras %}
+
+{% for field in martial_art_form  %}
+  <div class="form-group">
+    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+    {{ field|attr:"class=form-control" }}
+    </div>
+{% endfor %}
+<input type="hidden" name="update_url" value="{% url 'martial_art_edit' martial_art_pk=martial_art.id %}">
+<input type="hidden" name="delete_url" value="{% url 'martial_art_delete' martial_art_pk=martial_art.id %}">
