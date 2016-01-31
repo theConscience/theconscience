@@ -1,0 +1,8 @@
+{% extends "errors/base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Request error" %}{% endblock title %}
+
+{% block main_content %}
+<h1>Sorry, ajax required for {{ request_types }} on this page!</h1>
+{% endblock main_content %}

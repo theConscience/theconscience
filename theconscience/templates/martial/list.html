@@ -1,5 +1,5 @@
 {% extends "martial/base.html" %}
-{% load i18n %}
+{% load i18n theconscience_extras %}
 
 {% block title %}{% trans "Martial arts list" %}{% endblock title %}
 
@@ -9,7 +9,7 @@
     .col-xs-6:nth-of-type(even) {
       background-color: bisque;
     }
-    ul.default-list.martial-arts-list > li > a:nth-child(2) {
+    .link--important {
       color: tomato;
     }
   </style>  
@@ -20,11 +20,15 @@
 {{ block.super }}
   <script>
     (function() {
+      // блокируем переход по ссылке, которая открывает форму редактирования
       $('ul.martial-arts-list').on('click', '.edit-martial-art-link', function(event) {
         event.preventDefault();
       });
       var martialArtModal = $('#editMartialArtModal');
-      // при ооткрытии модального окна для редактирования объекта
+      var modalWaitForReload = false;
+
+      // При открытии модального окна для редактирования объекта, отправляем
+      // GET запрос на url из data-атрибута кнопки, а полученный ответ рендерим
       martialArtModal.on('show.bs.modal', function(event) {
         var button = $(event.relatedTarget); // Button that triggered the modal
         var recipient = button.data('url'); // Extract info from data-* attributes
@@ -34,35 +38,53 @@
           console.log(answer_data);
           var typeofanswer = typeof answer_data;
           console.log(typeofanswer);
-          martialArtModal.find('.modal-body form').html(answer_data);
+          martialArtModal.find('.modal-body form#modal_edit_form').html(answer_data);
         });
         /* modal.find('.modal-title').text('New message to ' + recipient);*/
+      });
+
+      // При закрытии модального окна если есть переменная modalWaitForReload - 
+      // перезагружаем страницу.
+      martialArtModal.on('hide.bs.modal', function(event) {
+        if (modalWaitForReload) {
+          location.reload();
+        }
       });
       
       // подготовка к отправке формы редактирования объекта
       var editForm = $('form.martial-art-edit-form');
-      var editFormSubmitButton = $('.modal-footer submit');
+      var editFormSubmitButton = $('.modal-footer [type=submit]');
       console.log('editForm = ' + editForm);
       console.log('editFormSubmitButton = ' + editFormSubmitButton);
-      // связываем кнопку отправки и форму (для IE)
-      editFormSubmitButton.click(function(){
+      // связываем кнопку отправки и форму (для IE) и заодно переопределяем переменную
+      // кнопки той, что нажали - для дальнейшего использования
+      editFormSubmitButton.click(function(event) {
+        editFormSubmitButton = $(this);
         editForm.submit();
-      });
+      }); 
+
       // отправка формы редактирования объекта
       editForm.submit(function(event) {
         event.preventDefault();
-        var update_url = $(this).find('input[name=update_url]').val();
+        var update_url = '';
+        if (editFormSubmitButton.hasClass('js-update-object-cbv')) {
+          update_url = $(this).find('input[name=update_url_cbv]').val();
+        } else {
+          update_url = $(this).find('input[name=update_url]').val();           
+        }
         console.log('update_url = ' + update_url);
         var form_data = $(this).serialize();
         console.log('form_data = ' + form_data);
         $.post(update_url, form_data, function(answer_data) {
-          console.log(answer_data);
+          console.log('answer_data = ' + answer_data);
           var alert = $('.modal .modal-header .alert');
           var alertText = alert.find('.alert-text');
           alertText.html('');
           if (answer_data['success']) {
             var answer = answer_data['success'];
             alert.removeClass('hidden-xs-up').removeClass('alert-danger').addClass('alert-success');
+            // при закрытии окна, эта переменная перезагрузит страницу
+            modalWaitForReload = true;
           } else if (answer_data['error']) {
             var answer = answer_data['error'];
             alert.removeClass('hidden-xs-up').removeClass('alert-success').addClass('alert-danger');
@@ -71,12 +93,20 @@
         });
       });
 
-      var deleteInstanceButton = $('.btn-delete-martial-art');
+      // удаление объекта
+      var deleteInstanceButton = $('.modal-footer .btn-danger');
       deleteInstanceButton.click(function() {
         var check = confirm('Do you really want to delete this item?');
         if (check) {
-          var delete_url = editForm.find('input[name=delete_url]').val();
+          var delete_url = '';
+          if ($(this).hasClass('js-delete-object-cbv')) {
+            delete_url = editForm.find('input[name=delete_url_cbv]').val();
+          } else {
+            delete_url = editForm.find('input[name=delete_url]').val();
+          }
+          console.log('delete_url = ' + delete_url);
           $.post(delete_url, {}, function(answer_data) {
+            console.log('answer_data = ' + answer_data);
             if (answer_data['close']) {
               martialArtModal.modal('hide');
               location.reload();
@@ -92,17 +122,41 @@
         }
       });
 
+      // отправка формы на delete_cbv без аякса
+      var deleteTestForm = $('#test_post_form');
+      var sendButton = deleteTestForm.find('input[type=submit]');
+      sendButton.click(function(event) {
+        event.preventDefault();
+        console.log('sendButton clicked!');
+        var delete_url = editForm.find('input[name=delete_url_cbv]').val();
+        console.log(delete_url);
+        deleteTestForm.attr('action', delete_url);
+        deleteTestForm.submit();
+      });
+
     })();
   </script>  
 {% endblock js %}
 
 
 {% block main_content %}
+<h1><b>CRUD</b> tests in <i>DJANGO</i> functional & Class Based Views</h1>
 <strong>Martial arts!</strong>
 {% if martial_arts_list %}
 <ul class="default-list martial-arts-list">
   {% for art in martial_arts_list %}
-  <li title="{{ art.art_type }}"><a class="edit-martial-art-link" href="#" data-toggle="modal" data-target="#editMartialArtModal" data-url="{% url 'martial_art_edit' martial_art_pk=art.id %}">{{ art.title }}</a> <a class="edit-martial-art-link" href="#" data-toggle="modal" data-target="#editMartialArtModal" data-url="{% url 'martial_art_edit_cb' martial_art_pk=art.id %}">edit</a></li>
+  <li title="{{ art.art_type }}">
+    <div>
+      <a class="link--default" href="{% url 'martial_art_detail' martial_art_pk=art.id %}">{{ art.title }}</a>
+      |
+      <a class="link--default" href="{% url 'martial_art_detail_cbv' pk=art.id %}">{{ art.title }} cbv</a>
+    </div>
+    <div>
+      <a class="link--important" href="#" data-toggle="modal" data-target="#editMartialArtModal" data-url="{% url 'martial_art_edit' martial_art_pk=art.id %}">edit</a>
+      |
+      <a class="link--important" href="#" data-toggle="modal" data-target="#editMartialArtModal" data-url="{% url 'martial_art_update_cbv' pk=art.id %}">edit in CBV</a>
+    </div>
+  </li>
   {% endfor %}
 </ul>
 {% endif %}
@@ -115,15 +169,31 @@
     <div class="col-xs-6">
       <form class="form" action="{% url 'martial_art_add' %}" method="POST">
       {% csrf_token %}
-        {{ martial_art_form.as_p }}
-        <input type="submit" class="btn btn-normal" value="send">
+        <fieldset>
+          <legend><b>Create instance through functional view</b></legend>
+          {% for field in martial_art_form  %}
+          <div class="form-group">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field|attr:"class=form-control" }}
+          </div>
+          {% endfor %}
+          <input type="submit" class="btn btn-normal" value="send">
+        </fieldset>
       </form>
     </div>
     <div class="col-xs-6">
-      <form class="form" action="{% url 'martial_art_add_cb' %}" method="POST">
+      <form class="form" action="{% url 'martial_art_add_cbv' %}" method="POST">
       {% csrf_token %}
-        {{ martial_art_form.as_p }}
-        <input type="submit" class="btn btn-normal" value="send">
+        <fieldset>
+          <legend><b>Create instance through CBV</b></legend>
+          {% for field in martial_art_form  %}
+          <div class="form-group">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field|attr:"class=form-control" }}
+          </div>
+          {% endfor %}
+          <input type="submit" class="btn btn-normal" value="send">
+        </fieldset>
       </form>
     </div>
   </div>
@@ -152,11 +222,18 @@
         {% csrf_token %}
         <!-- сюда добавляем форму из AJAX-ответа -->
         </form>
+        <br>
+        <form action="" method="POST" id="test_post_form">
+        {% csrf_token %}
+          <input type="submit" class="btn btn-warning"  value="test standard request to delete cbv">
+        </form>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-        <button type="submit" class="btn btn-primary" form="modal_edit_form">Submit</button>
-        <button type="button" class="btn btn-danger btn-delete-martial-art">Delete</button>
+        <button type="submit" class="btn btn-primary js-update-object" form="modal_edit_form">Save</button>
+        <button type="button" class="btn btn-danger js-delete-object">Delete</button>
+        <button type="submit" class="btn btn-primary js-update-object-cbv" form="modal_edit_form">Save in CBV</button>
+        <button type="button" class="btn btn-danger js-delete-object-cbv">Delete in CBV</button>
       </div>
     </div>
   </div>
