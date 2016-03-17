@@ -1,0 +1,23 @@
+{
+  "name": "theconscience_drf_node_automatization",
+  "description": "test project",
+  "main": "",
+  "authors": [
+    "theConscience <vinton.mail@gmail.com>"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/theConscience/theconscience",
+  "moduleType": [],
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "react": "^0.14.7",
+    "jquery": "^2.2.1"
+  }
+}

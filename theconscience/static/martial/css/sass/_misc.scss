@@ -1,0 +1,23 @@
+.float {
+  &-left {
+    float: left !important;
+  }
+  &-right {
+    float: right !important;
+  }
+}
+.text {
+  &-left {
+    text-align: left !important;
+  }
+  &-right {
+    float: right !important;
+    text-align: right !important;
+  }
+}
+.ololo {
+  pointer-events: separate;
+}
+.win {
+  background-color: red;
+}

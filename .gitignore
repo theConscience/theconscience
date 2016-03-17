@@ -47,6 +47,12 @@ var/
 .installed.cfg
 *.egg
 
+# Node package manager
+node_modules/
+
+# Other files
+\!!*.bu.*
+
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt

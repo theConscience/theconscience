@@ -1,0 +1,38 @@
+body { color: #000; }
+h1 {
+    font-size: 24px;
+    &.main-page {
+        color: darkseagreen;
+    }
+}
+h2 {
+    font-size: 21px;
+    &.main-page {
+        color: darkslateblue;
+    }
+}
+.clearfix {
+    &::before,
+    &::after {
+        display: table;
+        content: '';
+    } 
+    &::after {
+        clear: both;
+    }
+}
+.box {
+    display: block;
+    &.arr {
+        display: table;
+    }
+}
+.red {
+    color: red;
+}
+.green {
+    color: green;
+}
+.orange {
+    color: orange;
+}

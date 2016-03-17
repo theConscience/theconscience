@@ -1,0 +1,32 @@
+'use strict';
+
+var $ = require('./bower_components/jquery/jquery.js');  
+var React = require('./bower_components/react/react.js');
+var ReactDOM = require('./bower_components/react/react-dom.js');
+
+// var TestApp = React.createClass({  
+//   render: function() {
+//     return (
+//       <div className="page">
+//         <h1>Oh shit! React works!</h1>
+//       </div>
+//     );
+//   }
+// });
+
+var HelloWorld = React.createClass({
+  render: function() {
+    return (
+      <div className="page-2">
+        <h1>Hello World!</h1>
+      </div>
+    );
+  }
+});
+
+ReactDOM.render(  
+  <div className="page-1">
+    <h1>Oh shit! React works!</h1>
+  </div>,
+  document.getElementById('content')
+);

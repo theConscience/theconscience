@@ -1,0 +1,18 @@
+h1.index {
+    color: darkgrey;
+}
+h2 {
+    color: green;
+}
+.mysuperclass {
+    position: relative;
+}
+.mysuperclass2 {
+    position: absolute;
+}
+.mysuperclass3 {
+    position: absolute;
+    & > .mysupechild {
+    	color: red;
+    }
+}
