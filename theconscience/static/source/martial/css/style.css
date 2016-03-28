@@ -1,0 +1,7 @@
+.my-class {
+	-webkit-transform: all 0.5 ease;
+	-ms-transform: all 0.5 ease;
+	-o-transform: all 0.5 ease;
+	transform: all 0.5 ease;
+	text-align: left;
+}

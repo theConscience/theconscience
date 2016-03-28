@@ -1,0 +1,9 @@
+.index-page {
+  font-size: 10px;
+}
+
+@media screen and (min-width: 768px) {
+  .index-page {
+    font-size: 22px;
+  }
+}

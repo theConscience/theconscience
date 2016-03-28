@@ -1,4 +1,4 @@
-{% load pipeline %}
+{# load pipeline #}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,13 +9,30 @@
   <meta name="author" content="theConscience">
   <meta name="keywords" content="{% block keywords %}{% endblock %}">
   <link rel="icon" href="{{ MEDIA_URL }}images/123.ico" type="image/x-icon">
-  <!-- styles -->
-  {% stylesheet 'mysite_css' %}
+  {# stylesheet 'mysite_css' #}
+  <link rel="stylesheet" href="{{ STATIC_URL }}css/mysite_css{{ STATIC_EXT }}.css">
+  <!-- CSS styles -->
+  {% block css %}
+  {% if not STATIC_CONCAT %}
+  {% include  "links/base_links.html" %}
+  {% elif STATIC_CONCAT %}
+  <link rel="stylesheet" href="{{ STATIC_URL }}css/base_links.concated{{ STATIC_EXT }}.css">
+  {% endif %}
+  {% endblock css %}
+  {% block css_media_queries %}{% endblock css_media_queries %}
 </head>
 <body>
   {% block content %}{% endblock %}
-  <!-- JavaScript scripts -->
-  <script src="{{ STATIC_URL }}build/js/multibundle.min.js"></script>
+
   {# javascript 'mysite_js' #}
+  <script src="{{ STATIC_URL }}js/testjs/app.cmnjs{{ STATIC_EXT }}.js"></script>
+  <!-- JavaScript scripts -->
+  {% block js %}
+  {% if not STATIC_CONCAT %}
+  {% include  "scripts/base_scripts.html" %}
+  {% elif STATIC_CONCAT %}
+  <script src="{{ STATIC_URL }}js/base_scripts.concated{{ STATIC_EXT }}.js">
+  {% endif %}
+  {% endblock js %}
 </body>
 </html>

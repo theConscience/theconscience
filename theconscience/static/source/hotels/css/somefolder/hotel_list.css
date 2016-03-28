@@ -1,0 +1,304 @@
+.ratecode_ajax_error, .ratecode_ajax_success{
+  font:15px bold Arial, sans-serif;
+
+  /* Overriding the default underline styling of the links */
+  text-decoration:none !important;
+  white-space:nowrap;
+  min-width:540px;
+  width:auto;
+  margin:2px 0 2px 0;
+  display:inline-block;
+  vertical-align:baseline;
+  position:relative;
+  cursor:pointer;
+  padding:4px 8px;
+  
+  background-repeat:no-repeat;
+
+  /* The following two rules are fallbacks, in case
+     the browser does not support multiple backgrounds. */
+
+  background-position:bottom left;
+  
+  /* Multiple backgrounds version. The background images
+     are defined individually in color classes */
+  
+  background-position:bottom left, top right, 0 0, 0 0;
+  background-clip:border-box;
+  
+  /* Applying a default border raidus of 8px */
+  
+  -moz-border-radius:8px;
+  -webkit-border-radius:8px;
+  border-radius:8px;
+  
+  /* A 1px highlight inside of the button */
+  
+  -moz-box-shadow:0 0 1px #fff inset;
+  -webkit-box-shadow:0 0 1px #fff inset;
+  box-shadow:0 0 1px #fff inset;
+  
+  /* Animating the background positions with CSS3 */
+  /* Currently works only in Safari/Chrome */
+  
+  -webkit-transition:background-position 1s;
+  -moz-transition:background-position 1s;
+  transition:background-position 1s;
+}
+
+.ratecode_ajax_error:hover, .ratecode_ajax_success:hover{
+  background-position:top left;
+  background-position:top left, bottom right, 0 0, 0 0;
+}
+
+.ratecode_ajax_success{
+  color:#fff !important;
+  background-color: #79be1e;
+  }
+
+.ratecode_ajax_success:hover{
+  color:#fff !important;
+  background-color:#89d228;
+}
+
+.ratecode_ajax_error{
+  color:#693e0a !important;
+  background-color: rgba(255, 173, 173, 0.83);
+}
+
+.ratecode_ajax_error:hover{
+  background-color:#ec9732;
+} 
+.ratings { 
+  width: 70px;
+  height: 11px;
+  background: url("/static/search_form/img/ratings.png") no-repeat 0 0;
+  display: inline-block;
+}
+.ratings_style2 {
+  background: url("/static/search_form/img/ratings2.png") no-repeat 0 0;
+}
+.ratings span {
+  display: block;
+  width: 12px;
+  height: 11px;
+  padding: 0 1px;
+  float: left;
+  cursor: pointer;
+}
+.ratings span:first-child {padding-left: 0;}
+.r0 {background-position: 0 0;}
+.r1,.hover-star1 {background-position: 0 -11px;}
+.r2,.hover-star2 {background-position: 0 -22px;}
+.r3,.hover-star3 {background-position: 0 -33px;}
+.r4,.hover-star4 {background-position: 0 -44px;}
+.r5,.hover-star5 {background-position: 0 -55px;}
+
+/* header styles fix for descendant headers */
+#hotel-supplier .section-header,
+#hotel-supplier .article-header {
+  width: auto;
+  height: auto;
+  padding: inherit;
+}
+
+/* page grid restyling */
+
+#hotel-supplier .search .row [class|="col"],
+#hotel-supplier .filters .row [class|="col"],
+#hotel-supplier .connect_to_ratecode .row [class|="col"] {
+  margin-bottom: 1.8em;
+}
+
+#hotel-supplier .search .row,
+#hotel-supplier .filters .row,
+#hotel-supplier .article-header,
+#hotel-supplier .connect_to_ratecode,
+#hotel-supplier .hotels .row {
+  padding-left: 15px;
+  padding-right: 15px;
+}
+
+#hotel-supplier table#connect_to_ratecode tbody {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+#hotel-supplier .search,
+#hotel-supplier .filters { 
+  background: #FBFBFC;
+}
+
+#hotel-supplier .search {
+  padding-top: 2em;
+  border-top: 1px solid #dbdbdd;  
+}
+
+#hotel-supplier .filters {
+  border-bottom: 1px solid #dbdbdd;  
+}
+
+#hotel-supplier .connect_to_ratecode {
+  border-bottom: 1px solid #dbdbdd;  
+}
+
+/* search panel input style */
+#hotel-supplier .search-panel {
+  width: 100%;
+  font-size: 1.5em;
+  padding: .5em 1em;
+  border: 1px solid #ccc;
+}
+
+#hotel-supplier .css-checkbox-wrap label {
+  width: inherit;
+  line-height: 1.2;
+  display: block;
+}
+
+#hotel-supplier .hotels .section-content .toggle-wrap {
+  cursor: pointer;
+}
+
+#hotel-supplier .hotels .section-content p.title {
+  padding-top: .8em;
+  padding-bottom: .8em;
+  margin-bottom: 0;
+  line-height: 1.6em;
+}
+
+#hotel-supplier .hotels .section-content p.title .hotel-stars {
+  font-size: 1.3em;
+  font-weight: 500;
+}
+
+#hotel-supplier .hotels .section-content p.title i {
+  color: #EF0F54;
+  font-size: 1.5em;
+  cursor: pointer; 
+}
+
+#hotel-supplier .hotels .section-content p.title a { text-decoration: none; border-width: 0; margin-right: 5px }
+
+#hotel-supplier .hotels .section-content p.title .hotel-title {
+  color: #EF0E55;
+  font-size: 1.5em;
+  font-weight: 500;
+  line-height: 1.2em;
+}
+
+#hotel-supplier .hotels .section-content p.title .hotel-id {
+  font-size: 1.1em;
+  color: #9997A3;
+}
+
+#hotel-supplier .hotels .section-content a {
+  display: inline-block;
+  padding-top: .3em;
+  font-size: 1.4em;
+  font-weight: 400;
+  border-bottom: 1px dashed #337ab7;
+}
+
+#hotel-supplier .hotels .section-content a:hover {
+  text-decoration: none;
+  border-bottom-color: #88cefc;  
+}
+
+#hotel-supplier .hotels .section-content p.title small.hotel-country {
+  font-size: 1.2em;
+  font-style: italic;
+}
+#hotel-supplier .hotels .section-content .hotel-item:nth-of-type(2n) {
+  background-color: #f9f9f9;
+}
+#hotel-supplier .hotels .section-content .hotel-item tr td:nth-of-type(2) .glyphicon {
+  color: #27ae60;
+}
+
+#hotel-supplier .hotel-supplier-list tr {
+  background-color: #f3f3f3;
+  border-bottom: 1px solid #dbdbdd;  
+}
+
+#hotel-supplier .hotel-supplier-list tr td {
+  padding-top: 1em;
+  padding-bottom: 1em;
+  padding-left: 30px;
+}
+
+#hotel-supplier .hotel-item .hotel-supplier-list tr td a {
+  font-size: 1.3em;
+}
+
+#hotel-supplier .hotel-supplier-list tr td:first-of-type a {
+  padding-top: 0;
+}
+
+#hotel-supplier .hotel-supplier-list tr td .rate_code_info {
+  font-size: 1.1em;
+  font-weight: 400;
+}
+
+/* page typography */
+#hotel-supplier h2 {
+  color: #06070E;
+  font-weight: 300;
+  font-size: 3em;
+  margin-bottom: 17px;
+}
+
+#hotel-supplier label {
+  display: inline-block;
+  width: 30%;
+  color: #06070E;
+  font-size: 1.4em;
+  font-weight: 300;
+}
+
+#hotel-supplier .filters label {
+  text-align: right;
+  padding-right: 12px;
+  margin-bottom: 0;
+  font-size: 1.3em;
+  width: 40%;  
+}
+
+#hotel-supplier .filters label[for='id_resort'] {}
+
+#hotel-supplier .article-header { font-weight: 300; }
+#hotel-supplier .article-header .tab-menu { padding: 0 }
+#hotel-supplier .article-header h2 { font-size: 4em }
+
+#hotel-supplier .article-header .header-block { padding: 25px 0 }
+#hotel-supplier .article-header h2 { padding: 0; margin: 0 }
+
+#hotel-supplier .hotels .section-header {
+  padding-left: 15px;
+  padding-right: 15px;
+  font-weight: 300;
+  font-size: 1.6em;
+}
+
+#hotel-supplier .errorlist {
+  font-size: 1.3em;
+}
+
+/* bootstrap rearrange button */
+
+#hotel-supplier .btn-group.bootstrap-select {
+  width: 100%;
+  max-width: 270px;
+}
+
+#hotel-supplier .btn-group.bootstrap-select button {
+  padding: 4px 12px 4px 25px;
+}
+@media screen and (min-width: 991px) and (max-width: 1382px) {
+  #hotel-supplier .filters label {
+    text-align: left !important;
+  }
+  #hotel-supplier .filters label[for='id_resort'] {
+    width: 100%;
+  } 
+}

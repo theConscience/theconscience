@@ -43,7 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     # Pipeline
-    'pipeline',
+    # 'pipeline',
     # DRF
     'rest_framework',
     # My Apps
@@ -87,6 +87,8 @@ TEMPLATES = [
                 'django.core.context_processors.media',
                 'django.core.context_processors.static',
                 'django.core.context_processors.i18n',
+                'context_processors.extension',
+                'context_processors.concatenated',
             ],
         },
     },
@@ -150,14 +152,12 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.9/howto/static-files/
 
+STATIC_ROOT = os.path.join(PROJECT_PATH, 'static/build')
+STATIC_URL = '/static/build/'
+STATIC_EXT = '.min'
 
-# STATIC_URL = '/static/source/'
-# STATIC_URL = '/static/build/'
-STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(PROJECT_PATH, 'static')
-
-MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(PROJECT_PATH, 'media')
+MEDIA_URL = '/media/'
 
 try:
     from settings_local import *

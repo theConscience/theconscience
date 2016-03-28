@@ -11,7 +11,9 @@ logs/
 # project config
 theconscience/settings_local.py
 
-
+# external apps static files
+theconscience/static/source/+(admin|rest_framework)/
+theconscience/static/source/+(admin|rest_framework)/*
 
 .installed.cfg
 bin

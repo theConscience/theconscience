@@ -1,0 +1,26 @@
+body {
+  h1 {
+    color: red;
+    &.important {
+      font-weight: 700;
+    }
+  }
+  h2 {
+    color: green;
+    &:first-of-type {
+      margin-top: 0;
+    }
+  }
+}
+.page-1 {
+  color: darkseagreen;
+}
+.page-2 {
+  color: darkgoldenrod;
+}
+.page-3 {
+  color: darkgoldenrod;
+}
+.page-4 {
+  color: darkgoldenrod;
+}
