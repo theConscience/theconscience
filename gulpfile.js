@@ -204,8 +204,8 @@ gulp.task('build:css_js', function() {
     // пока сюда попадают и обычные и минифицированные .css и .js файлы
     return gulp.src(file)  // пользуемся галпом как обычно, только у каждого файла будет свой gulp.dest
       //.pipe(gitChanged({file: 'hash-file', src: 'src/'}))
-      .pipe(gitStatus({excludeStatus: 'unchanged'}))  // Default: "modified" | Possible values: ["modified", "unchanged", "untracked"]
-      .pipe(gitStatus({excludeStatus: 'untracked'}))
+      //.pipe(gitStatus({excludeStatus: 'unchanged'}))  // Default: "modified" | Possible values: ["modified", "unchanged", "untracked"]
+      //.pipe(gitStatus({excludeStatus: 'untracked'}))
       .pipe(nonMinifyedCssFilter)  // фильтруем только неминифицированный CSS
       .pipe(minifyCssChannel())  // переходим в канал для минификации CSS
       .pipe(nonMinifyedCssFilter.restore)  // по возвращении сбрасываем фильтр
