@@ -29,6 +29,6 @@
 {% if not STATIC_CONCAT %}
 {% include "scripts/index_scripts.html" %}
 {% elif STATIC_CONCAT %}
-<script src="{{ STATIC_URL }}js/index_scripts.concated{{ STATIC_EXT }}.js">
+<script src="{{ STATIC_URL }}js/index_scripts.concated{{ STATIC_EXT }}.js"></script>
 {% endif %}
 {% endblock js %}

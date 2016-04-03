@@ -63,13 +63,11 @@
   "dependencies": {},
   "scripts": {
     "lint": "jshint .",
-    "build:clean": "gulp build:clean",
+    "clean_templates": "gulp build:clean_templates",
     "build:django_apps": "gulp build:django_apps",
     "build:css_js": "gulp build:css_js"
   },
   "pre-commit": [
-    "build:clean",
-    "build:django_apps",
-    "build:css_js"
+    "clean_templates"
   ]
 }
