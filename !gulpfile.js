@@ -40,7 +40,9 @@ var gulp = require('gulp'),
     useref = require('gulp-useref'),
     changed = require('gulp-changed'),
     filesCreate = require('gulp-style-inject'),
-    concat = require('gulp-concat');
+    concat = require('gulp-concat'),
+    gitChanged = require('gulp-git-changed'),
+    gitStatus = require('gulp-git-status');
 
 // CLI options
 var knownOptions = {
@@ -126,11 +128,11 @@ console.log('\n');
 // Global config variables
 var thisPath = path.resolve(),
   templatesRelPath = './theconscience/templates/',
-  staticPath = './theconscience/static/',
+  staticRelPath = './theconscience/static/',
   devRelPath = './theconscience/static/source/',
   buildRelPath = './theconscience/static/build/',
-  prodFullPath = path.resolve(thisPath, staticPath),
-  buildFullPath = path.resolve(thisPath, staticPath);
+  staticDevAbsPath = path.resolve(thisPath, staticRelPath),
+  staticBuildAbsPath = path.resolve(thisPath, staticRelPath);
 
 // Excluded folders:
 var excludedAppsFolders = '';

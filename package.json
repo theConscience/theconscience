@@ -23,6 +23,8 @@
     "gulp-foreach": "^0.1.0",
     "gulp-git-changed": "^0.4.0",
     "gulp-git-status": "0.0.1",
+    "gulp-html-minifier": "^0.1.8",
+    "gulp-htmlmin": "^1.3.0",
     "gulp-if": "^2.0.0",
     "gulp-if-else": "^1.0.3",
     "gulp-ignore": "^2.0.1",
