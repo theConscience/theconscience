@@ -1,0 +1,232 @@
+{% extends "base_bootstrap_2015/tours_base.html" %}
+{% load i18n hotels_extras %}
+
+{% block fancybox %}
+    {% include 'base_bootstrap_2015/fancybox_2_include.html' %}
+{% endblock %}
+
+
+{% block ui %}
+    {% include 'base_bootstrap_2015/ui_include.html' %}
+{% endblock %}
+
+
+{% block css %}
+<link href="{{ STATIC_URL }}hotels/css/hotel_detail_bootstrap.css" type="text/css" rel="stylesheet">
+{% if hotel_suppliers %}
+{% comment %}
+  <!--
+  Мне нужно, чтобы минимальная высота .hotel-detail-base всегда равнялась
+  высоте .hotel-menu-left, но появились пункты, которые в нём появляются динамически.
+  Дальше я пытаюсь это учесть.
+  ###
+  multiply:43 - высота элемента .hotel-menu-left ul li ;
+  add:386 - изначальная высота .hotel-menu-left, она же задана как min-height для
+  .hotel-detail-base в css файле выше, и следующим кодом мы её перебиваем ;
+  add:10 - высота разделяющего бордера .hotel-menu-item-special-first {border-top} ;
+  ###
+  Получается, что точная высота .hotel-menu-left складывается из его высоты +
+  высота элементов Li которые появляются в случае если у отеля есть поставщики,
+  т.е. количество поставщиков * высоту одного Li + высота разделителя 10.
+  -->
+{% endcomment %}
+{% with hotel_suppliers|length|multiply:43|add:386|add:10 as menu_height %}
+<style>
+  .hotel-detail-base {
+    min-height: {{ menu_height }}px;
+  }
+</style>
+{% endwith %}
+{% endif %}
+{% endblock css %}
+
+<!-- Содержимое этого блока наследуется из самого базового шаблона. Переопределяем
+его только в конкретных наследуемых шаблонах, например hotel_features_bootstrap,
+room_features_bootstrap, restaurants_and_bars_bootstrap и т.д..
+
+{% comment %}
+{% block profile_submenu_left_hotel %}
+{% url 'hotel_list' as url_hotel_list %}
+<a href="{% url 'hotel_profile' hotel_pk=hotel.pk %}" class="btn-block menu-hotel-list">
+  <span class="text">{{ hotel.title }}</span>
+</a>          
+{% endblock profile_submenu_left_hotel %}
+{% endcomment %}
+
+-->
+
+{% block profile_content %}
+<!-- !!!!!! Блок profile_content переопределен в hotel_detail_content !!!!!! -->
+{% load main_tags %}
+<section class="clearfix hotel-detail-base">
+  <div class="hotel-menu no-padding clearfix">
+    <ul>
+      {% block hotel_menu_items %}
+      <li>
+        <a href="{% url 'hotel_rooms_edit' hotel_pk=hotel.pk company_pk=company.pk %}">
+          {% trans 'Список комнат' %}
+          {% filter_qs hotel.room_set.all company=company as room_list %} 
+          {% if room_list %}
+            ({{ room_list.count }})
+          {% endif %}
+        </a>
+        <i class="icon-bed2"></i>
+      </li>
+      <li>
+        <a href="{% url 'hotel_photo' hotel_pk=hotel.pk company_pk=company.pk %}">{% trans 'Фотографии' %}
+          {% hotel_photo_count hotel=hotel company=company as hotel_photo_count %}
+          {% if hotel_photo_count %}({{ hotel_photo_count }}){% endif %}
+        </a>
+        <i class="glyphicon glyphicon-picture" aria-hidden="true"></i>
+      </li>
+      <li>
+        <a href="{% url 'hotel_video' hotel_pk=hotel.pk company_pk=company.pk %}">
+          {% trans 'Видео' %}{% if hotel.hotelvideo_set.count %} ({{ hotel.hotelvideo_set.count }}){% endif %}
+        </a>
+        <i class="glyphicon glyphicon-film" aria-hidden="true"></i>
+      </li>
+      <li>
+        <a href="{% url 'hotel_file' hotel_pk=hotel.pk company_pk=company.pk %}">
+          {% trans 'Файлы отеля' %}
+          {% if hotel.hotelfile_set.count %}({{ hotel.hotelfile_set.count }}){% endif %}
+        </a>
+        <i class="fa fa-file-text"></i> 
+      </li>
+      <li>
+        <a href="{% url 'hotel_descriptions' hotel_pk=hotel.pk company_pk=company.pk %}">{% trans 'Описание отеля' %}</a>
+        <i class="fa fa-h-square"></i>
+      </li>
+      <li>
+        <a href="{% url 'hotel_features' hotel_pk=hotel.pk company_pk=company.pk %}">{% trans 'Детали отеля' %}</a>
+        <i class="fa fa-cog"></i>
+      </li>
+      <li>
+        <a href="{% url 'restaurant_and_bar' hotel_pk=hotel.id company_pk=company.id %}">
+          {% trans 'Рестораны и бары' %}
+          {% if hotel.restaurantandbar_set.count %}({{ hotel.restaurantandbar_set.count }}){% endif %}
+        </a>
+        <i class="fa fa-cutlery"></i>
+      </li>
+      <li>
+        <a href="{% url 'conference_hall' hotel_pk=hotel.id company_pk=company.id %}">
+          {% trans 'Конференц залы' %}
+          {% if hotel.conferencehall_set.count %}({{ hotel.conferencehall_set.count }}){% endif %}
+        </a>            
+        <i class="fa fa-users"></i>
+      </li>      
+      <li>
+        <a href="{% url 'spa' hotel_pk=hotel.id company_pk=company.id %}">
+          {% trans 'СПА' %}
+          {% if hotel.spa_set.count %}({{ hotel.spa_set.count }}){% endif %}
+        </a>
+        <i class="fa fa-leaf"></i>
+      </li>
+      {% if hotel_suppliers %}
+      {% for hotel_supplier_item in hotel_suppliers %}
+      <li class="hotel-menu-item-special">
+        <a href="{% url 'hotel_edit' hotel_supplier_pk=hotel_supplier_item.pk %}"> 
+          {% trans "Rates" %} / {{ hotel_supplier_item.supplier.contragent_title }} 
+        </a>
+        <i class="glyphicon glyphicon-eur" aria-hidden="true"></i>
+      </li>
+      {% endfor %}
+      {% endif %}
+      {% endblock hotel_menu_items %}
+    </ul>
+  </div>
+  <div class="hotel-content clearfix">
+    <!--<div class="company-short-link">
+      {% if short_link_form %}
+        <label>{% trans 'Адрес Вашего отеля в интернете' %}</label>
+        <div>
+          http://{{ request.get_host }}/
+          <div class="input-wrap">
+            <input type="text" id="id_short_link" name="short_link">
+            <a class="short-link-edit" href=""><i class="fa fa-edit"></i></a>
+          </div>
+          <span class="short-link-example">{% trans 'Пример хорошего адреса' %}: http://{{ request.get_host }}/HotelGrandBudapest</span>
+          {{ short_link_form.errors }}
+        </div>
+        <div>
+          
+        </div>
+      {% endif %}    
+    </div>-->
+    <div class="hotel-detail-content clearfix">
+    {% block hotel_detail_content %}
+    {% endblock hotel_detail_content %}
+    </div>
+  </div>
+</section>  
+
+{% endblock profile_content %}
+
+{% block js %}
+{{ block.super }}
+
+<script type="text/javascript">
+
+  function change_hotel_menu_height() {
+    if (window.innerWidth > 768) {
+      if (!$('.hotel-menu').hasClass('hotel-menu-left')) {
+        $('.hotel-menu').addClass('hotel-menu-left');
+      }
+      if ($('.hotel-menu').height() < $('.hotel-content').height()) {
+        $('.hotel-content').ready(function() {
+          /*$('.hotel-menu').height( $('.hotel-detail-content article').height() );*/
+        });
+      }
+    } else {
+      $('.hotel-menu').css('height', 'inherit');
+      $('.hotel-menu').removeClass('hotel-menu-left');
+    }
+  }
+  
+  $(document).ready(function(){
+    change_hotel_menu_height();
+    $(window).resize(change_hotel_menu_height);
+    $(window).scroll(change_hotel_menu_height);
+    /*$(".ui-accordion-header:not('.ui-accordion-header-active')").ready(function() {
+      $(this).click(function() {
+        $('.hotel-menu').removeAttr('style');
+        setTimeout($('.hotel-menu').height($('.hotel-detail-content article .container-fluid').height()), 2000);
+      });
+    });*/
+  });
+
+  /* очистка кэша */
+  if ($('.send-request').get(0)) {  // чтобы обработчик не висел на страницах, где нет кнопки .send-request, актуально, т.к. этот шаблон наследует много разных страниц
+    var clear_cache_url = "{% url 'clear_cache' %}";
+    var cache_key = "{{ request.cache_key }}";
+    $('.send-request').live('click', function() {
+      var form = $(this).closest('form');
+      var url = $(this).attr('href');
+      var short_link = $('#id_short_link').val();
+      $.ajax({
+        url: url,
+        type: 'post',
+        async: true,
+        data: {
+          short_link: short_link,
+          csrfmiddlewaretoken: '{{ csrf_token }}'
+        },
+        success: function(data) {
+          console.log(data);
+          if ('success' in data) {
+            $.get(clear_cache_url, {
+              cache_key: cache_key
+            });
+            $.fancybox.showLoading();
+            window.location.reload();
+          } else if ('errors' in data) {
+            var data_form_html = $(data.errors).find('form').html();
+            form.html(data_form_html);
+          }
+        }
+      });
+      return false;
+    });
+  }
+</script>
+
+{% endblock js %}

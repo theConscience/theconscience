@@ -1,0 +1,725 @@
+{% load userprofiles_extras thumbnail i18n contragents_extras %}
+<!DOCTYPE html>
+<html class="no-js" lang="{{ LANGUAGE_CODE }}">
+<head>
+	
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge;chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="
+  {% block meta_description %}{% endblock %}
+  ">
+  <meta name="keywords" content="
+  {% block meta_keywords %}{% endblock %}
+  ">
+  <meta name="robots" content="
+  {% block meta_robots %}{% endblock %}
+  ">
+
+  <link rel="shortcut icon" href="{{ STATIC_URL }}base_bootstrap_2015/images/{% if request.is_unitravel %}ut_favicon{% else %}uh_favicon{% endif %}.ico" type="image/x-icon">
+ 
+  <title>  
+  {% block whole_title %}
+    {% block page_title %}
+      {% trans "Личный кабинет" %}  
+    {% endblock %} - {{ request.get_host }}
+  {% endblock %}
+  </title>   
+       
+  <link href="{{ STATIC_URL }}base_bootstrap_2015/css/bootstrap.min.css" type="text/css" rel="stylesheet">
+  <!-- <link href="{{ STATIC_URL }}base_bootstrap_2015/css/bootstrap-select.css" type="text/css" rel="stylesheet"> -->    
+  <link href="{{ STATIC_URL }}base_bootstrap_2015/css/style.css" type="text/css" rel="stylesheet">
+  <link href="{{ STATIC_URL }}base_bootstrap_2015/css/media-queries.css" type="text/css" rel="stylesheet">
+  <!--<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">-->
+  <link href="{{ STATIC_URL }}font_awesome/4_5/css/font-awesome.min.css" rel="stylesheet">
+  <link href="{{ STATIC_URL }}base_bootstrap_2015/css/icomoon.css" type="text/css" rel="stylesheet">
+  <link href="{{ STATIC_URL }}base_bootstrap_2015/css/icomoon_additional.css" type="text/css" rel="stylesheet">
+  <link href="{{ STATIC_URL }}base_bootstrap_2015/css/icomoon3.css" type="text/css" rel="stylesheet">
+  <link href="{{ STATIC_URL }}base_bootstrap_2015/css/icomoon4.css" type="text/css" rel="stylesheet">
+  <link href="{{ STATIC_URL }}base_bootstrap_2015/css/jquery.bxslider.css" type="text/css" rel="stylesheet">
+  <!-- link href="{{ STATIC_URL }}base_bootstrap_2015/css/datepicker.css" type="text/css" rel="stylesheet" -->
+  <link href='http://fonts.googleapis.com/css?family=Roboto:400,300,100,500&subset=latin,cyrillic' type='text/css' rel='stylesheet'>
+    
+  {% block css %}{% endblock %}
+  
+  <!-- актуализует html5 тэги в старых браузерах, не трогать! -->
+  <script type="text/javascript" src="{{ STATIC_URL }}base_bootstrap_2015/js/html5shiv.min.js"></script>
+    
+</head>
+
+<body id="base_inner">      
+  <noscript><div>{% trans "Для правильной работы сайта нужно включить поддержку js" %}</div></noscript>
+  {% include 'main/confirm.html' %}
+  <div class="container-fluid  main-container"> 
+    
+    <div class="profile-container  col-xs-profile  pull-right">  
+      <!-- Правое боковое меню страницы -->
+      <aside id="profile" class="clearfix  pull-left">
+      	
+        <div class="head  clearfix  {% if request.user.profile.tip %}tip  tip-static{% endif %}">
+          <!-- tip -->
+          <div class="popup-tip  popup-left  component" style="display: none;">
+            Основное меню
+            <a href="#" class="popup-close"><i class="fa fa-times"></i></a>
+          </div>
+          <!-- tip end -->
+          
+        	<div class="row">
+        		<div class="col-xs-9  no-padding-right">
+        			<div class="person">
+        				<p class="name clickbox">
+                  <a href="{% url 'message_settings' %}" class="profile-link">
+                    <i class="fa fa-pencil"></i> {{ user }}
+                  </a>
+                </p>
+        			  <p class="firm">
+                  {% if request.company.type == 'J' %}
+                  <a href="{% url 'company_edit' %}" class="company-link">
+                    <i class="fa fa-pencil"></i> {{ request.company }} (ID: {{ user.company_id }})
+                  </a>
+                  {% endif %}
+                  {% if request.user.available_companies.all.count > 1 %}  
+                    <i class="fa fa-level-up" data-toggle="modal" data-target="#myModal"></i>
+                  {% endif %}                    
+                </p>
+        			  <a href="{% url 'auth_logout' %}" class="exit">{% trans "Выход" %}</a>
+                
+                {% if request.user.available_companies.all.count > 1 %}
+                <!-- Modal -->
+                <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                  <div class="modal-dialog">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title" id="myModalLabel">{% trans "Company change" %}</h4>
+                      </div>
+                      <div class="modal-body">
+                        <form action="{% url 'change_company' %}" method='POST' id="company_change_form">
+                          {% csrf_token %}
+                          <select name='company_to' class="form-control">
+                          {% for c in request.user.available_companies.all %}
+                            <option value='{{ c.id }}' {% if c.id == user.company_id %}selected{% endif %} title="your company">{{ c }} (id: {{ c.id }})</option>
+                          {% endfor %} 
+                          </select>
+                        </form>
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-default normal" data-dismiss="modal">{% trans "Cancel" %}</button>
+                        <button type="submit" form="company_change_form" class="btn btn-standard">{% trans "Change company" %}</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {% endif %}
+                
+        			</div>
+        		</div>
+        		<div class="col-xs-3">
+        			<div class="displace">
+        			  <a href="#"><i class="icon-arrow"></i>{% trans "Свернуть" %}</a>
+        			</div>
+        		</div>
+        	</div>
+        </div>
+          
+        <div id="float_block">
+          <nav>
+          	<ul class="nav">
+            	
+              {% block menu_profile %}
+              {% if request.user.is_authenticated %} 
+              
+                {% if user|has_perm:'userprofiles.profile_edit_public_page' or user.main_user %}
+                  <li>
+                    <a href="{% url 'company_page_settings_base' %}"><i class="fa fa-globe" style="font-size: 25px;margin-left:4px;margin-right:10px;vertical-align: bottom;"></i>
+                      <span style="">{% trans "Профайл компании" %}</span>
+                    </a>
+                   </li>
+                {% endif %}
+                {% if request.company.interface == 'hotel' %}
+                    {% url 'profile' as url_profile %}
+                    {% url 'hotel_list' as url_hotel_list %}
+                    <li>
+                      <a href="{% url 'profile' %}" class="{% if request.path == url_profile or request.path == url_hotel_list %}active{% endif %}">
+                        <span class="menuicon icon1"></span>
+                        {% trans "Мои отели" %}
+                      </a>
+                    </li>
+                {% endif %}
+                {% if not request.company.interface == 'full' %}
+                    {% url 'access_level_files' as url_access_level_files %}
+                    <li><a href="{{ url_access_level_files }}" class="{% if request.path == url_access_level_files %}active{% endif %}"><span class="menuicon icon10"></span> {% trans "Мои файлы" %}</a></li>
+                {% endif %}
+                {% if request.company.interface == 'full' %}
+                    {% url 'hotels_search' as url_hotels_search %}
+					          <li><a href="{% url 'hotels_search' %}" class="{% if request_path|starts_with:url_hotels_search %}active{% endif %}"><span class="menuicon icon1"></span> {% trans "Tours & Hotels" %}</a></li>
+                {% endif %}
+                
+                {% if request.company.interface == 'full' %}
+                  {% url 'order_list' as url_order_list %}
+                  <li><a href="{% url 'order_list' %}" class="{% if request_path|starts_with:url_order_list %}active{% endif %}"><i class="fa fa-file-text icon7"></i> {% trans "Документы" %}</a></li>
+                  <!--<li><a href="#"><span class="menuicon icon2"></span> {% trans "Сервисы" %}</a></li>-->
+                  <li class="dropdown"><a class="dropdown-toggle" data-toggle="dropdown" href="#"><span class="menuicon icon3"></span> {% trans "Инструменты" %}</a>
+                    <ul class="dropdown-menu dropdown-menu-left">
+                    	  {% url 'events_calendar' as url_events_calendar %}
+                        <li><a href="{% url 'events_calendar' %}" class="{% if request_path|starts_with:url_events_calendar %}active{% endif %}">{% trans "Календарь заездов" %}</a></li>
+                        {% url 'booking_statistic' as url_booking_statistic %}
+                        <li><a href="{% url 'booking_statistic' %}" class="{% if request_path|starts_with:url_booking_statistic %}active{% endif %}">{% trans "Статистика" %}</a></li>
+                        {% url 'charge_list' as url_charge_list %}
+                        <li><a href="{% url 'charge_list' %}" class="{% if request_path|starts_with:url_charge_list %}active{% endif %}">{% trans "Расходы" %}</a></li>
+                    </ul>
+                  </li>
+                
+                
+                  {% if request.company.type != 'P' and user|has_profile_perm:'money_turnover.profile_work_with_finance' %}
+                    {% url 'fincenters_turnover' as url_fincenters_turnover %}
+                    <li><a href="{% url 'fincenters_turnover' %}" class="{% if request_path|starts_with:url_fincenters_turnover %}active{% endif %}"><i class="fa fa-money menuicon icon11"></i> {% trans "Финансы" %}</a></li>
+                  {% endif %}
+                
+                
+                  {% url 'avia' as url_avia %}
+                  <li><a href="{% url 'avia' %}" class="{% if request_path|starts_with:url_avia %}active{% endif %}"><i class="icon-plane  icon9"></i> {% trans "Авиа" %}</a></li>
+                {% endif %}
+                
+                {% url 'view_all_news' as url_all_news %}
+                <li><a href="{% url 'view_all_news' %}" class="{% if request_path|starts_with:url_all_news %}active{% endif %}"><i class="fa fa-newspaper-o icon8"></i> {% trans "Новости" %}</a></li>
+                
+                {% if user|has_profile_perm:'companies.profile_view_contragent' %}
+                  {% url 'contragents_own' as url_contragents_own %}
+                  <li><a href="{% url 'contragents_own' %}" class="{% if request_path|starts_with:url_contragents_own %}active{% endif %}"><span class="menuicon icon5"></span> {% trans "Контакты" %} {% get_contragents_requests_count request.company %}</a></li>
+                {% endif %}
+                {% if request.company.interface != 'full' %}
+                  {% url 'chatroom' as url_chatroom %}
+                  <li><a href="{% url 'chatroom' %}" class="{% if request_path|starts_with:url_chatroom %}active{% endif %}"><span class="menuicon icon6"></span> {% trans "Чат" %} {% if number_messages %}({{ number_messages }}){% endif %}</a></li>
+                {% endif %} 
+              
+              {% endif %}  
+              {% endblock %}
+                
+              {% block menu_profile_extra %}{% endblock %}
+              
+            </ul>
+          </nav>
+          {% url 'unihotel_invitation' as url_unihotel_invitation %}
+          {% ifnotequal request.get_full_path url_unihotel_invitation  %}
+          <div class="call_friends  clearfix"> <!--  TEMPORARY HIDDEN  -->
+          	<!-- <a href="#" class="close_me"></a> -->
+            <p style="font-weight:normal; cursor:pointer;" onClick="window.location.assign('{% url "unihotel_invitation" %}');">
+              <span id="menu_invite_text">
+                {% trans "Пригласите всех ваших партнеров для совместной работы" %}.
+              </span>
+            </p>
+          </div>
+          {% endifnotequal %}
+        </div>
+          
+        <div class="info">
+        	<div class="tabs">
+            {% if request.company.interface == 'full' %}
+          	<ul class="nav  nav-tabs  clearfix">
+              {% url 'chatroom' as url_chatroom %}
+            	<li class="col-xs-4 text-center one {% if request.path|starts_with:url_chatroom %}now{% endif %}"><a href="{% url 'chatroom' %}"><span class="icon iconone"></span>{% trans "Сообщения" %}<span class="badge">{% if number_messages %}+{{ number_messages }}{% endif %}</span></a></li>
+              <li class="col-xs-4 text-center two"><a href="{% url 'order_list' %}"><span class="icon icontwo"></span>{% trans "Заявки" %}<span class="badge">{% if request.new_orders_count %}+{{ request.new_orders_count }}{% endif %}</span></a></li>
+              <li class="col-xs-4 text-center three"><a href="{% url 'bill_list' %}"><span class="icon iconthree"></span>{% trans "Счета" %}<span class="badge">+1</span></a></li>
+              <li class="col-xs-4 text-center three" id="show"><span class="glyphicon glyphicon-th-list"></span>{% trans "Меню" %}</li>
+            </ul>
+            {% endif %}            
+            <div class="blocks">
+            	<div id="block1" class="block" style="display:none;"> <!--  TEMPORARY HIDDEN  -->
+              	<article>
+                	<p class="name  clearfix">Елена Руденская <time class="pull-right">10:17</time></p>
+                    <p class="title"><a href="#">По поводу раннего бронирования</a></p>
+                    <p><a href="#">Хотела узнать, какую скидку можно у вас получить, если бронировать...</a>
+                  </p>
+                </article>
+                <article>
+                	<p class="name  clearfix">Елена Руденская <time class="pull-right">10:17</time></p>
+                    <p class="title"><a href="#">По поводу раннего бронирования</a></p>
+                    <p><a href="#">Хотела узнать, какую скидку можно у вас получить, если бронировать...</a>
+                  </p>
+                </article>
+                <article>
+                	<p class="name  clearfix">Елена Руденская <time class="pull-right">10:17</time></p>
+                    <p class="title"><a href="#">По поводу раннего бронирования</a></p>
+                    <p><a href="#">Хотела узнать, какую скидку можно у вас получить, если бронировать...</a>
+                  </p>
+                </article>
+                <a href="#" class="to_all">{% trans "Ко всем сообщениям" %} (578)</a>
+              </div>
+              <div id="block2" class="block">
+              	<article>
+                	<p class="name  clearfix">Елена Руденская <time class="pull-right">10:17</time></p>
+                    <p class="title"><a href="#">По поводу раннего бронирования</a></p>
+                    <p><a href="#">Хотела узнать, какую скидку можно у вас получить, если бронировать...</a>
+                  </p>
+                </article>
+                <article>
+                	<p class="name  clearfix">Елена Руденская <time class="pull-right">10:17</time></p>
+                    <p class="title"><a href="#">По поводу раннего бронирования</a></p>
+                    <p><a href="#">Хотела узнать, какую скидку можно у вас получить, если бронировать...</a>
+                  </p>
+                </article>
+                <article>
+                	<p class="name  clearfix">Елена Руденская <time class="pull-right">10:17</time></p>
+                    <p class="title"><a href="#">По поводу раннего бронирования</a></p>
+                    <p><a href="#">Хотела узнать, какую скидку можно у вас получить, если бронировать...</a>
+                  </p>
+                </article>
+                <a href="#" class="to_all">{% trans "Ко всем сообщениям" %} (578)</a>
+              </div>
+              <div id="block3" class="block">
+              	<article>
+                	<p class="name  clearfix">Елена Руденская <time class="pull-right">10:17</time></p>
+                    <p class="title"><a href="#">По поводу раннего бронирования</a></p>
+                    <p><a href="#">Хотела узнать, какую скидку можно у вас получить, если бронировать...</a>
+                  </p>
+                </article>
+                <article>
+                	<p class="name  clearfix">Елена Руденская <time class="pull-right">10:17</time></p>
+                    <p class="title"><a href="#">По поводу раннего бронирования</a></p>
+                    <p><a href="#">Хотела узнать, какую скидку можно у вас получить, если бронировать...</a>
+                  </p>
+                </article>
+                <article>
+                	<p class="name  clearfix">Елена Руденская <time class="pull-right">10:17</time></p>
+                    <p class="title"><a href="#">По поводу раннего бронирования</a></p>
+                    <p><a href="#">Хотела узнать, какую скидку можно у вас получить, если бронировать...</a>
+                  </p>
+                </article>
+                <a href="#" class="to_all">{% trans "Ко всем сообщениям" %} (578)</a>
+              </div>
+            </div>
+          </div>    
+        </div>
+        
+        <div class="help">
+        	<a href="{% url 'help' %}"><span class="helpicon"></span>{% trans "Помощь" %}</a>
+        </div>
+        
+      </aside>
+    	<!-- конец aside#profile - правого бокового меню -->
+    </div>
+    
+    
+    
+    <div class="content-container">
+      <!-- Основной блок страницы -->
+      <section id="mainpage" class="clearfix">
+      
+        <header class="page-header  clearfix"> 
+        	<a href="
+          {% url 'profile' %}" id="logo" class="pull-left" style="background:url({{ STATIC_URL }}base_bootstrap_2015/images/{% if request.is_unitravel %}ut_logo_horizontal.jpg{% else %}logo2.png{% endif %}) no-repeat;"></a>
+          <p class="descr pull-left">{% trans "Бесплатная мировая туристическая система" %}</p>
+           <div class="lang pull-right col-xs-3">
+              {% get_language_info_list for LANGUAGES as languages %}
+              {% for language in languages %}
+                {% if language.code == LANGUAGE_CODE %}<p class="current">{{ language.name_local }} <span class="caret pull-right"></span></p>{% endif %}
+              {% endfor %}
+             <ul class="nav transition"> 
+                  <form action="{% url 'language' %}" method="post" class="change_lang_form" id="lang_form">
+                    {% csrf_token %}
+                    <input name="next" type="hidden" value="{{ request.path }}">
+                    <input name="language" type="hidden" id="lang_val">
+                    <!-- у первого языка class="navbar-link" -->
+                    {% for language in languages %}
+                      <li><a language_code="{{ language.code }}" style="cursor:pointer;" onClick="$('#lang_form #lang_val').val('{{ language.code }}'); $('#lang_form').submit();"{% if language.code == LANGUAGE_CODE %} class="navbar-link"{% endif %}>{{ language.name_local }}</a></li>
+                    {% endfor %}
+                  </form>
+              </ul>
+            </div>                    
+        </header>
+        
+        {% url 'profile' as url_profile %}         
+        {% if teasers_closed or 'news/' in request.path or 'slider' in page_elements and page_elements.slider == 'off' %}
+        
+          <div id="teasers" class="clearfix {% if teasers_closed or page_elements.teasers == 'minimize' %}{% else %}open{% endif %}">
+          	<div class="teaser teaser1">
+            	<div class="image">
+              	<img src="{{ STATIC_URL }}base_bootstrap_2015/images/teasers1.png" alt="" class="img-responsive center-block">
+                <p class="title text-center">{% trans "Переводы" %}</p>
+                <a href="{% url 'teasers:show_teaser' title_url='translations_terms' %}" class="text-center transition">{% trans "Заказать" %}</a>
+              </div>
+            </div>
+            <div class="teaser teaser2">
+            	<div class="image">
+              	<img src="{{ STATIC_URL }}base_bootstrap_2015/images/teasers2.png" alt="" class="img-responsive center-block">
+                <p class="title text-center">{% trans "Онлайн бронирование" %}</p>
+                <a href="{% url 'teasers:show_teaser' title_url='online_reservation_module' %}" class="text-center transition">{% trans "Заказать" %}</a>
+              </div>
+            </div>
+            <div class="teaser teaser3">
+            	<div class="image">
+              	<img src="{{ STATIC_URL }}base_bootstrap_2015/images/teasers3.png" alt="" class="img-responsive center-block">
+                <p class="title text-center">{% trans "Выгрузка" %}</p>
+                <a href="{% url 'teasers:show_teaser' title_url='data_transfer_module' %}" class="text-center transition">{% trans "Заказать" %}</a>
+              </div>
+            </div>
+            <div class="teaser teaser4">
+            	<div class="image">
+              	<img src="{{ STATIC_URL }}base_bootstrap_2015/images/teasers4.png" alt="" class="img-responsive center-block">
+                <p class="title text-center">{% trans "Сервисы" %}</p>
+                <a href="{% url 'teasers:show_teaser' title_url='services' %}" class="text-center transition">{% trans "Заказать" %}</a>
+              </div>
+            </div>
+            <div class="teaser teaser5">
+            	<div class="image">
+              	<img src="{{ STATIC_URL }}base_bootstrap_2015/images/teasers5.png" alt="" class="img-responsive center-block">
+                <p class="title text-center">{% trans "Представи-<br>тельство" %}</p>
+                <a href="{% url 'teasers:show_teaser' title_url='representative_services'%}" class="text-center transition">{% trans "Заказать" %}</a>
+              </div>
+            </div>
+            <a href="#" class="toggle toggle1"></a>
+            <a href="#" class="toggle toggle2"></a>
+          </div>
+        
+        {% else %}
+        
+          <div id="serv_slide" style="visibility: hidden;">
+            <ul class="list-unstyled  bxslider  clearfix">
+              <li class="slide group">
+                <div class="inside inside1">
+                  <div class="left pull-left">
+                    <div class="image"><img src="{{ STATIC_URL }}base_bootstrap_2015/images/teaser1.png" alt="" class="img-responsive pull-left"></div>
+                    <div class="text pull-left">
+                      <p class="title">{% trans "Переводы" %}</p>
+                      <a href="{% url 'teasers:show_teaser' title_url='translations_terms' %}" class="text-center transition">{% trans "Заказать" %}</a>
+                    </div>    
+                  </div>
+                  <div class="right col-xs-5 pull-right">
+                    {% trans "Переводы ваших информационных файлов " %}
+                    {% trans "для любого рынка, на любом языке" %}.
+                  </div>  
+                </div>
+              </li>
+              <li class="slide group">
+                <div class="inside inside2">
+                  <div class="left pull-left">
+                    <div class="image"><img src="{{ STATIC_URL }}base_bootstrap_2015/images/teasers2.png" alt="" class="img-responsive pull-left"></div>
+                    <div class="text pull-left">
+                      <p class="title" style="color:#000000;">{% trans "Онлайн бронирование" %}</p>
+                      <a href="{% url 'teasers:show_teaser' title_url='online_reservation_module' %}" class="text-center transition pink">{% trans "Заказать" %}</a>
+                    </div>    
+                  </div>
+                  <div class="right col-xs-5 pull-right">
+                    {% trans "Установка модуля онлайн бронирования " %}  
+                    {% trans "в корпоративном стиле вашей компании и с использованием " %}
+                    {% trans "цвета, стиля, логотипа вашей компании. " %}  
+                    {% trans "Круглосуточное онлайн бронирование из любой точки мира." %} 
+                  </div>  
+                </div>
+              </li>
+              <li class="slide group">
+                <div class="inside inside3">
+                  <div class="left pull-left">
+                    <div class="image"><img src="{{ STATIC_URL }}base_bootstrap_2015/images/teasers2.png" alt="" class="img-responsive pull-left"></div>
+                    <div class="text pull-left">
+                      <p class="title">{% trans "Сервисы" %}</p>
+                      <a href="{% url 'teasers:show_teaser' title_url='services' %}" class="text-center transition pink">{% trans "Заказать" %}</a>
+                    </div>    
+                  </div>
+                  <div class="right col-xs-5 pull-right" style="color:#fff;">
+                    {% trans "Туристическая платформа Unihotel.org помогает создавать" %}
+                    {% trans " и продвигать ваши уникальные сервисы"%}
+                  </div>  
+                </div>
+              </li>
+              <li class="slide group">
+                <div class="inside inside4">
+                  <div class="left pull-left">
+                    <div class="image"><img src="{{ STATIC_URL }}base_bootstrap_2015/images/teasers2.png" alt="" class="img-responsive pull-left"></div>
+                    <div class="text pull-left">
+                      <p class="title">{% trans "Выгрузка" %}</p>
+                      <a href="{% url 'teasers:show_teaser' title_url='data_transfer_module' %}" class="text-center transition pink">{% trans "Заказать" %}</a>
+                    </div>    
+                  </div>
+                  <div class="right col-xs-5 pull-right" style="color:#fff;">
+                    {% trans "Выгрузка ваших данных и их последующая синхронизация с любыми системами бронирования," %}
+                    {% trans "GDS-системами и сайтами типа TripAdvisor. Легкая выгрузка ваших новостей по всему миру." %} 
+                  </div>  
+                </div>
+              </li>
+              <li class="slide group">
+                <div class="inside inside5">
+                  <div class="left pull-left">
+                    <div class="image"><img src="{{ STATIC_URL }}base_bootstrap_2015/images/teasers2.png" alt="" class="img-responsive pull-left"></div>
+                    <div class="text pull-left">
+                      <p class="title">{% trans "Представи-<br>тельство" %}</p>
+                      <a href="{% url 'teasers:show_teaser' title_url='representative_services' %}" class="text-center transition pink">{% trans "Заказать" %}</a>
+                    </div>    
+                  </div>
+                  <div class="right col-xs-5 pull-right" style="color:#fff;">
+                    {% trans "Закажите услуги по продвижению и маркетингу для вашего отеля на территории России," %}  
+                    {% trans " и мы подберем Вам оптимальный пакет обслуживания, от 150 евро в месяц." %} 
+                  </div>  
+                </div>
+              </li>
+            </ul>
+          </div>
+          
+          <div id="teasers" class="clearfix  {% if teasers_closed or page_elements.teasers == 'minimize' %}{% else %}open{% endif %}" style="display: none;">
+            <div class="teaser teaser1">
+              <div class="image">
+                <img src="{{ STATIC_URL }}base_bootstrap_2015/images/teasers1.png" alt="" class="img-responsive center-block">
+                <p class="title text-center">{% trans "Переводы" %}</p>
+                <a href="{% url 'teasers:show_teaser' title_url='translations_terms' %}" class="text-center transition">{% trans "Заказать" %}</a>
+              </div>
+            </div>
+            <div class="teaser teaser2">
+              <div class="image">
+                <img src="{{ STATIC_URL }}base_bootstrap_2015/images/teasers2.png" alt="" class="img-responsive center-block">
+                <p class="title text-center">{% trans "Онлайн бронирование" %}</p>
+                <a href="{% url 'teasers:show_teaser' title_url='online_reservation_module' %}" class="text-center transition">{% trans "Заказать" %}</a>
+              </div>
+            </div>
+            <div class="teaser teaser3">
+              <div class="image">
+                <img src="{{ STATIC_URL }}base_bootstrap_2015/images/teasers3.png" alt="" class="img-responsive center-block">
+                <p class="title text-center">{% trans "Выгрузка" %}</p>
+                <a href="{% url 'teasers:show_teaser' title_url='data_transfer_module' %}" class="text-center transition">{% trans "Заказать" %}</a>
+              </div>
+            </div>
+            <div class="teaser teaser4">
+              <div class="image">
+                <img src="{{ STATIC_URL }}base_bootstrap_2015/images/teasers4.png" alt="" class="img-responsive center-block">
+                <p class="title text-center">{% trans "Сервисы" %}</p>
+                <a href="{% url 'teasers:show_teaser' title_url='services' %}" class="text-center transition">{% trans "Заказать" %}</a>
+              </div>
+            </div>
+            <div class="teaser teaser5">
+              <div class="image">
+                <img src="{{ STATIC_URL }}base_bootstrap_2015/images/teasers5.png" alt="" class="img-responsive center-block">
+                <p class="title text-center">{% trans "Представи-<br>тельство" %}</p>
+                <a href="{% url 'teasers:show_teaser' title_url='representative_services' %}" class="text-center transition">{% trans "Заказать" %}</a>
+              </div>
+            </div>
+            <a href="#" class="toggle toggle1"></a>
+            <a href="#" class="toggle toggle2"></a>
+          </div>
+
+        {% endif %}
+        
+        <section class="content">
+          
+          <div class="head  clearfix" {% if no_menu %}style="display: none;"{% endif %}>
+            <div class="title col-xs-12">   <!-- {# url 'hotel_profile' hotel_pk=hotel.pk #} -->
+            
+            {% comment %} Глобальный блок субменю, включает все варианты субменю для всех типов компаний {% endcomment %}
+            {% block profile_submenu_left %}
+              {% url 'hotel_list' as url_hotel_list %}
+              {% url 'all_hotel_list' as url_all_hotel_list %}
+              {% url 'set_hotel_for_profile' as url_set_hotel_for_profile %}
+
+            {% comment %} Субменю для Отелей {% endcomment %}
+            {% block profile_submenu_left_hotel %}
+              {% comment %}  если компания-отель и в словаре контекста есть hotel.pk, тогда отрисовываем этот отель первым. {% endcomment %}
+              {% if request.is_hotel and hotel.pk %}
+                <a href="{% url 'hotel_profile' hotel_pk=hotel.pk %}" class="btn-block menu-hotel-list" data-toggle="disabled" title="{{ hotel.title }}">
+                  <span class="text">{{ hotel.title }}</span> <span class="caret"></span>
+                </a>
+                <ul class="dropdown-menu  dropdown-menu-right  hotels-dropdown  col-xs-12">
+                {% comment %} берём список отелей из request.hotel_lst(он добавляется @primary_decorator'ом), и генерим пункты меню {% endcomment %}
+                {% for h in request.hotel_lst %}
+                  {% comment %} отель, на странице которого мы находимся, в этом списке - не отображаем(на него уже есть ссылка выше)  {% endcomment %}
+                  {% if h.id != hotel.pk %}
+                  <li><a href="{% url 'hotel_profile' hotel_pk=h.pk %}" title="{{ h.title }}"> {{ h.title }}</a></li>
+                  {% endif %}
+                {% endfor %}
+                {% comment %} если мы не на странице списка отелей, то показываем ссылку на неё {% endcomment %}
+                {% if not request_path|ends_with:url_hotel_list and not request_path|ends_with:url_all_hotel_list %}
+                  <li><a class="all-hotels" href="{{ url_hotel_list }}"><i class="icon-list"></i>{% trans "Все отели" %}</a></li>
+                {% endif %}
+                {% comment %} если мы не на странице добавления отеля в профайл, то показываем ссылку на неё {% endcomment %}
+                {% if not request_path|ends_with:url_set_hotel_for_profile %}
+                  <li><a class="add-hotel" href="{{ url_set_hotel_for_profile }}"><i class="fa fa-search-plus"></i> {% trans "Добавить отель" %}</a></li>
+                {% endif %}
+                </ul>
+              {% comment %} когда в словаре контекста нет hotel.pk но компания - отель, и у неё заведён хотя-бы один отель {% endcomment %}
+              {% elif request.hotel_lst %}
+                {% comment %} запоминаем первый отель из списка, чтобы добавить на него ссылку в меню, и не задублировать её дальше {% endcomment %}
+                {% with request.hotel_lst|get_first as first_hotel %}
+                <a href="{% url 'hotel_profile' hotel_pk=first_hotel.pk %}" class="btn-block menu-hotel-list" data-toggle="disabled" title="{{ first_hotel.title }}">
+                  <span class="text">{{ first_hotel.title }}</span> <span class="caret"></span>
+                </a>
+                <ul class="dropdown-menu  dropdown-menu-right  hotels-dropdown  col-xs-12">
+                {% comment %} берём список отелей (он добавляется @primary_decorator'ом)  {% endcomment %}
+                {% for h in request.hotel_lst %}
+                  {% comment %} отрисовываем все отели кроме первого (в данном случае ссылка на него уже есть в меню)  {% endcomment %}
+                  {% if h.id != first_hotel.id %}
+                  <li><a href="{% url 'hotel_profile' hotel_pk=h.pk %}" title="{{ h.title }}"> {{ h.title }}</a></li>
+                  {% endif %}
+                {% endfor %}
+                {% comment %} если мы не на странице списка отелей, то показываем ссылку на неё {% endcomment %}
+                {% if not request_path|ends_with:url_hotel_list and not request_path|ends_with:url_all_hotel_list %}
+                  <li><a class="all-hotels" href="{{ url_hotel_list }}"><i class="icon-list"></i>{% trans "Все отели" %}</a></li>
+                {% endif %}
+                {% comment %} если мы не на странице добавления отеля в профайл, то показываем ссылку на неё {% endcomment %}
+                {% if not request_path|ends_with:url_set_hotel_for_profile %}
+                  <li><a class="add-hotel" href="{{ url_set_hotel_for_profile }}"><i class="fa fa-search-plus"></i> {% trans "Добавить отель" %}</a></li>
+                {% endif %}
+                </ul>
+                {% endwith %}
+              {% comment %} компания отель, но у неё ещё не заведено ни одного отеля {% endcomment %}
+              {% elif request.is_hotel %}
+                <a href="{{ url_set_hotel_for_profile }}" class="btn-block add-hotel">
+                  <i class="fa fa-plus-circle"></i>  {% trans "Выберите отель и поставщика" %} 
+                </a>
+              {% endif %}
+            {% endblock profile_submenu_left_hotel %}
+
+            {% comment %} Субменю для остальных компаний {% endcomment %}
+            {% block profile_submenu_left_other %}
+              {% comment %} компания - не отель, находится В разделе отелей ( всё что за урлом /hotels/ ) на странице какого-то отеля {% endcomment %}
+              {% if not request.is_hotel and not request.hotel_lst and request_path|starts_with:url_hotel_list and hotel.pk %}
+                <a href="#" class="btn-block menu-hotel-list disabled" data-toggle="disabled">
+                  <span class="text">{{ hotel.title }}</span> 
+                </a>
+              {% comment %} компания - не отель, находится В разделе отелей ( всё что за урлом /hotels/ ) {% endcomment %}
+              {% elif not request.is_hotel and not request.hotel_lst and request_path|starts_with:url_hotel_list %}
+                <a href="#" class="btn-block menu-hotel-list disabled" data-toggle="disabled">
+                  <i class="fa fa-globe" style="padding-left: 0.3em;font-size: 2em;vertical-align: middle;"></i> 
+                </a>
+              {% comment %} компания-не отель, находится НЕ в разделе отелей ( всё, что НЕ за урлом /hotels/ ) {% endcomment %}
+              {% elif not request.is_hotel and not request.hotel_lst and not request_path|starts_with:url_hotel_list %}
+                <a href="#" class="btn-block menu-hotel-list disabled" data-toggle="disabled">
+                  <span class="text">{% trans "Меню" %}</span> 
+                </a>            
+              {% endif %}
+            {% endblock profile_submenu_left_other %}
+
+            {% endblock profile_submenu_left %}
+            
+            </div>
+            <nav class="navbar col-xs-12">
+            	<ul class="nav">
+                {% block profile_submenu %}
+                  {% include "base_bootstrap_2015/menu/company.html" %}
+                {% endblock %}
+              </ul>
+            </nav>
+            <div class="clearfix visible-xs"></div>
+          </div>
+          
+          {% if messages %}
+          	{% for message in messages %}
+          		<div class="alert alert-{{ message.tags }}">{{ message|safe }}</div>
+          	{% endfor %}
+          {% endif %}
+          
+          {% block profile_content %}
+          {% endblock %}
+        </section>
+        
+        {% block news %}
+        {% endblock news %}                 
+        
+        <footer class="page-footer">
+          <div class="copy pull-left">
+            <p>Unihotel. {% now_year "%Y" as now_year %}{{ now_year }}.</p>
+            <p>{% trans "Все права защищены" %} </p>
+            <p><a href="{% url 'helpdesk:tickets' %}">{% trans "Связаться с нами" %}</a></p>
+            <p><a href="{% url 'show_main_text' title_url='about' %}">{% trans 'Условия предоставления услуг' %}</a></p>
+          </div>
+          
+          
+          <div class="banking-logo"></div>
+          <ul class="soc_links  list-unstyled  pull-right  clearfix">
+          	<li><a href="
+            {% if 'unitravel.pro' in request.get_host %}
+              {% if LANGUAGE_CODE == 'ru' %}
+                https://www.facebook.com/pages/Unitravel-PRO-Russia/1617555788463445
+              {% else %}
+                https://www.facebook.com/pages/Unitravel-PRO/1398936380414280
+              {% endif %}
+            {% else %}
+              {% if LANGUAGE_CODE == 'ru' %}
+                https://www.facebook.com/pages/Unihotel-ORG-Russia/1394353804209914
+              {% else %}
+                https://www.facebook.com/pages/Unihotel-ORG/347993835391587
+              {% endif %}
+            {% endif %}
+            " class="text-center"><span class="fa fa-facebook"></span><!-- 3257 --></a></li>
+            <li><a href="https://www.linkedin.com/company/unihotel?trk=top_nav_home" class="text-center"><span class="fa fa-linkedin"></span><!-- 3257 --></a></li>
+            <li><a href="http://www.youtube.com/my_videos?o=U" class="text-center"><span class="fa fa-youtube-play"></span><!-- 3257 --></a></li>
+            <li><a href="https://instagram.com/unihotel.news/" class="text-center"><span class="fa fa-instagram"></span> <!-- 3257 --></a></li>
+          </ul>
+        </footer>
+        
+      </section>
+      <!-- конец  section#mainpage - основного блока страницы -->
+    </div>
+  </div>
+  
+  <script type="text/javascript" src="{{ STATIC_URL }}base_bootstrap_2015/js/jquery-1.11.1.min.js"></script>
+  
+  <script type="text/javascript" src="{{ STATIC_URL }}base_bootstrap_2015/js/jquery-migrate-1.2.1.min.js"></script>   
+  <script type="text/javascript" src="{{ STATIC_URL }}base_bootstrap_2015/js/bootstrap.min.js"></script>
+  <script type="text/javascript" src="{{ STATIC_URL }}base_bootstrap_2015/js/placeholders.min.js"></script>
+  <script type="text/javascript" src="{{ STATIC_URL }}base_bootstrap_2015/js/modernizr-latest.js"></script>
+  <!-- <script type="text/javascript" src="{{ STATIC_URL }}base_bootstrap_2015/js/modernizr.custom.03172.js"></script> -->
+  <script type="text/javascript" src="{{ STATIC_URL }}base_bootstrap_2015/js/device.min.js"></script>
+  <script type="text/javascript" src="{{ STATIC_URL }}base_bootstrap_2015/js/mobile.js"></script>
+  <script type="text/javascript" src="{{ STATIC_URL }}base_bootstrap_2015/js/jquery.easing.1.3.js"></script>
+  <script type="text/javascript" src="{{ STATIC_URL }}base_bootstrap_2015/js/jquery.mousewheel.js"></script>
+  <!-- <script type="text/javascript" src="{{ STATIC_URL }}base_bootstrap_2015/js/smoothing-scroll.js"></script> -->
+  <script type="text/javascript" src="{{ STATIC_URL }}base_bootstrap_2015/js/jquery.bxslider.min.js"></script>
+  <!-- script type="text/javascript" src="{{ STATIC_URL }}base_bootstrap_2015/js/bootstrap-datepicker.js"></script -->
+  
+  <script>
+  var order_list_url = "{% url 'order_list' %}";
+  </script>
+
+  <script type="text/javascript" src="{{ STATIC_URL }}base_bootstrap_2015/js/functions.js"></script>
+
+  {% block ui %}
+    <!-- подключается в наследуемом шаблоне -->
+    {# include 'base_bootstrap_2015/ui_include.html' #}
+  {% endblock %}
+   
+  {% block fancybox %}
+    <!-- подключается в наследуемом шаблоне -->
+    {# include 'base_bootstrap_2015/fancybox_2_include.html' #}
+  {% endblock %}  
+
+  
+  <script type="text/javascript" src="{{ STATIC_URL }}base_bootstrap_2015/js/base_inner.js"></script>
+  
+  <script>
+  $(function(){
+    // разворачиваемое меню отеля
+    $('div.title>a.menu-hotel-list').click(function(e) {
+      //{# with request.hotel_lst|get_first as hotel #}
+        //{# if hotel #}
+        {% if request.is_hotel %}
+          e.preventDefault();
+         //{# if request.hotel_lst.1 #}
+          if ($(this).data('toggle')== 'disabled') {
+            $(this).closest('div').find('ul').slideDown(200);
+            $(this).data('toggle', 'enabled');
+          } else {
+            $(this).closest('div').find('ul').slideUp(200);
+            $(this).data('toggle', 'disabled');
+          }
+          //{# endif #}
+        {% endif %}
+      //{# endwith #}
+    });
+  });
+  </script>
+
+  <!--[if lt IE 9]>
+  <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+  <![endif]-->
+  
+
+  {% block ajax_setup %}<script type="text/javascript" src="{{ STATIC_URL }}js/ajax_setup.js"></script>{% endblock %}
+  
+  {% block js_media_queries %}{% endblock %}
+  
+  {% block js %}{% endblock %}
+  
+  {% include "base_bootstrap_2015/metrika_counters.html" %}
+
+</body>
+</html>
+
+<!-- design base rebuild by Victor Kaptsov 11.02.2015 17:20 -->

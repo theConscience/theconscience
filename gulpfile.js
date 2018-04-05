@@ -135,6 +135,10 @@ if (options.excludes) {  // при желании их обработку мож
   patternDjangoAppsFolders = staticDevRelPath + patternDjangoApps;
   patternDjangoAppsFiles = staticDevRelPath + patternDjangoApps + '/**/*';
 }
+// добавляем игнор для вложенной папки билда:
+var patternBuildInner = '+(__build)';
+var patternBuildInnerFolders = staticDevRelPath + patternBuildInner;
+var patternBuildInnerFiles = staticDevRelPath + patternBuildInner + '/**/*';
 // выбираем остальные расположения, которые будем исключать, и файлы в них 
 var patternExcluded = '+(node_modules|bower_components|backup)';
 var patternExcludedFolders = staticDevRelPath + '**/*' + patternExcluded;
@@ -203,7 +207,7 @@ gulp.task('build:css_js', function() {
   console.log('final pattern: ' + patternFinal);
 
   // получаю в переменную массив строк, каждая строка - путь к одному css или js файлу
-  var files = glob.sync(patternFinal, {ignore: [patternDjangoAppsFiles, patternExcludedFiles]});  // вторым аргументом передаём массив строк с паттернами игнорируемых файлов
+  var files = glob.sync(patternFinal, {ignore: [patternDjangoAppsFiles, patternBuildInnerFiles, patternExcludedFiles]});  // вторым аргументом передаём массив строк с паттернами игнорируемых файлов
   console.log('Получившаяся выборка файлов:');
   for (var i = 0; i < files.length; i++) {
     console.log(files[i]);
@@ -326,7 +330,7 @@ gulp.task('build:html', function() {
   }
   console.log('final pattern: ' + patternFinal);
 
-  var files = glob.sync(patternFinal, {ignore: [patternDjangoAppsFiles, patternExcludedFiles]});
+  var files = glob.sync(patternFinal, {ignore: [patternDjangoAppsFiles, patternBuildInnerFiles, patternExcludedFiles]});
   console.log('Получившаяся выборка файлов:');
   for (var i = 0; i < files.length; i++) {
     console.log(files[i]);
@@ -399,7 +403,7 @@ gulp.task('build:images', function() {
   }
   console.log('final pattern: ' + patternFinal);
 
-  var files = glob.sync(patternFinal, {ignore: [patternDjangoAppsFiles, patternExcludedFiles]});
+  var files = glob.sync(patternFinal, {ignore: [patternDjangoAppsFiles, patternBuildInnerFiles, patternExcludedFiles]});
   console.log('Получившаяся выборка файлов:');
   for (var i = 0; i < files.length; i++) {
     console.log(files[i]);
@@ -450,7 +454,7 @@ gulp.task('build:clean_static', function() {
     patternDjangoAppsFiles = patternDjangoAppsFolders + '**/*';
   }
   // из-за особенности работы del.sync() в отличии от glob.sync() приходится указывать в игнорах не только файлы, но и папки в которых они лежат
-  return del.sync(staticBuildRelPath + '**/*', { ignore: [patternDjangoAppsFolders, patternDjangoAppsFiles]} );  // чистим статику продакшена кроме папок джанго-аппов 
+  return del.sync(staticBuildRelPath + '**/*', { ignore: [patternDjangoAppsFolders, patternBuildInnerFiles, patternDjangoAppsFiles]} );  // чистим статику продакшена кроме папок джанго-аппов 
 });
 
 
@@ -462,7 +466,7 @@ gulp.task('build:clean_templates', function() {
     patternDjangoAppsFiles = patternDjangoAppsFolders + '**/*';
   }
   // из-за особенности работы del.sync() в отличии от glob.sync() приходится указывать в игнорах не только файлы, но и папки в которых они лежат
-  return del.sync(templatesBuildRelPath + '**/*', { ignore: [patternDjangoAppsFolders, patternDjangoAppsFiles]} );  // чистим статику продакшена кроме папок джанго-аппов 
+  return del.sync(templatesBuildRelPath + '**/*', { ignore: [patternDjangoAppsFolders, patternBuildInnerFiles, patternDjangoAppsFiles]} );  // чистим статику продакшена кроме папок джанго-аппов 
 });
 
 

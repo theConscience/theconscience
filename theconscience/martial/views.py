@@ -17,15 +17,17 @@ from django.template.loader import get_template, render_to_string
 from django.utils.decorators import method_decorator
 from django.utils.translation import ugettext_lazy as _, check_for_language, activate, to_locale, get_language
 
-# from django.contrib.auth.models import User
-
 from project_mixins import AjaxRequired, AjaxGetRequired, AjaxPostRequired,\
                            ProcessFormMixedResponseView, \
                            FormJsonValidMixin, FormJsonInvalidMixin  # AjaxGeneral, JSONResponseMixin, AjaxableResponseMixin
 
-from .mixins import AjaxUpdateMixin, MartialArtUpdateAjaxResponseMixin, MartialArtDeleteAjaxResponseMixin
-from .models import MartialArt
-from .forms import MartialArtForm
+from mixins import AjaxUpdateMixin, MartialArtUpdateAjaxResponseMixin, MartialArtDeleteAjaxResponseMixin
+from models import MartialArt
+from forms import MartialArtForm
+
+from django.contrib.auth.models import User, Group
+from rest_framework import viewsets
+from serializers import UserSerializer, GroupSerializer, MartialArtSerializer
 
 
 # Create your views here.
@@ -290,3 +292,27 @@ def delete_success(request):
 
 
 # #############################################
+
+
+class UserViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows users to be viewed or edited.
+    """
+    queryset = User.objects.all().order_by('-date_joined')
+    serializer_class = UserSerializer
+
+
+class GroupViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows groups to be viewed or edited.
+    """
+    queryset = Group.objects.all()
+    serializer_class = GroupSerializer
+
+
+class MartialArtViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows groups to be viewed or edited.
+    """
+    queryset = MartialArt.objects.all()
+    serializer_class = MartialArtSerializer

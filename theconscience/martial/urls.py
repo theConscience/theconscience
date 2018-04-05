@@ -1,6 +1,13 @@
 # -*- coding: utf-8 -*-
 from django.conf.urls import patterns, url, include
+from rest_framework import routers
 from . import views
+
+router= routers.DefaultRouter()
+router.register(r'users', views.UserViewSet)
+router.register(r'groups', views.GroupViewSet)
+router.register(r'martial_arts', views.MartialArtViewSet)
+
 
 urlpatterns = [
 
@@ -20,4 +27,7 @@ urlpatterns = [
     url(r'^(?P<pk>\d+)/delete_class_based/$', views.MartialArtDeleteView.as_view(), name='martial_art_delete_cbv'),
 
     url(r'^delete_success/$', views.delete_success, name='delete_success'),
+
+    url(r'^api/', include(router.urls)),
+    url(r'^api/api-auth/', include('rest_framework.urls', namespace='rest_framework'))
 ]

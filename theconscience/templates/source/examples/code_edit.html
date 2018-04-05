@@ -1,0 +1,49 @@
+{% load userprofiles_extras i18n %}
+
+<form action="" id="code_edit_form">
+  {% csrf_token %}
+  <div class="form-group">
+    <label for="{{ code_form.title.auto_id }}" class="form-control">{{ code_form.title.label }}</label>
+    {{ code_form.title|attr:'class=form-control' }}
+  </div>
+  <div class="form-group">
+    <label for="{{ code_form.tag.auto_id }}" class="form-control">{{ code_form.tag.label }}</label>
+    {{ code_form.tag|attr:'class=form-control' }}
+    <p class="help-block">Укажите метку для поиска вашего примера</p>
+  </div>
+  <div class="form-group">
+    <label for="{{ code_form.description.auto_id }}" class="form-control">{{ code_form.description.label }}</label>
+    {{ code_form.description|attr:'class=form-control input-xs' }}
+  </div>
+  <div class="form-group">
+    <label for="{{ code_form.code.auto_id }}" class="form-control">{{ code_form.code.label }}</label>
+    {{ code_form.code|attr:'class=form-control' }}
+  </div>
+</form>
+<button type="submit" form="code_edit_form" class="btn btn-standard pull-right">{% trans "Сохранить" %}</button>
+
+<script>
+
+$( "#code_edit_form" ).submit(function( event ) {
+  event.preventDefault();
+  var code_edit_url = "{% url 'code_edit' code_id=code.id %}";
+  var code_title = $(this).find("input[name='title']").val();
+  var code_tag = $(this).find("select[name='tag']").val();
+  var code_description = $(this).find("textarea[name='description']").val();
+  var code_code = $(this).find("textarea[name='code']").val();
+  //console.log(code_edit_url);
+  //console.log(code_title);
+  //console.log(code_tag);
+  //console.log(code_description);
+  //console.log(code_code);
+  $.post(code_edit_url, {'title': code_title, 'tag': code_tag, 'description': code_description, 'code': code_code }, function(data){
+      for (var value in data) {
+        $('#code_edit_form').prepend('<div class="alert  alert-' + value + '">' + data[value] + '</div>');
+      }
+      setTimeout(parent.$.fancybox.close, 2500);
+      //console.log(document.location.href);
+      location.reload();
+  }) 
+});
+
+</script>

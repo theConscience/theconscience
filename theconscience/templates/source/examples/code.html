@@ -1,0 +1,227 @@
+{% extends "base_bootstrap_2015/base_inner.html" %}	
+{% load hotels_extras  mptt_tags %} 
+{% load i18n %}
+
+{% block fancybox %}
+  {% include 'base_bootstrap_2015/fancybox_2_include.html' %}
+{% endblock %}  
+
+
+{% block page_title %}
+  {% if not metatags.get_meta_title %}  
+      Components
+  {% else %}
+      {{ metatags.get_meta_title }}
+  {% endif %}
+{% endblock %}
+
+
+{% block css %}
+{{ block.super }}
+
+<link rel="stylesheet" href="{{ STATIC_URL }}base_bootstrap_2015/css/github.css">
+
+<style>
+.component-set {
+  padding-top: 2em;
+  padding-bottom: 2em;
+  border-bottom: 1px solid #eee;
+  border-top: 1px solid #eee;
+}
+.component-set:nth-of-type(2n) {
+  background-color: #fbfbfb;
+}
+.component-name {
+  margin: .5em 0 1em 0;
+  padding-bottom: .5em;
+  border-bottom: 1px solid #f1f1f1;
+  
+  font-size: 2em;
+  font-family: 'helveticaneuecyrbold';
+  line-height: 2em;
+ 
+  text-align: center;
+  vertical-align: middle;
+  /* text-transform: uppercase; */
+  
+  color: #4e4e4e;
+}
+.component-name small {
+  text-transform: initial;
+}
+.component-name code {
+  text-transform: none;
+}
+.icons-list {
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+  list-style-type: none;
+  padding: 0;
+  font-size: 1em;
+}
+.icons-list li {
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+  display: inline-block;
+  margin-right: -.25em;
+  width: 20%;
+  padding: 2em 1em;
+  text-align: center;
+}
+blockquote {
+  font-size: 1.6em;
+  line-height: 1.5;
+}
+
+.btn-standard,
+.btn-standard-full {
+    padding: .6875em 2em;
+    font-size: 1.6em;
+    font-weight: 300;
+    color: #fff;
+    background-color: #3798db;
+    border-color: #3798db;
+    border-width: 2px;
+}
+
+.btn-standard:hover,
+.btn-standard-full:hover {
+    background-color: #1576b9;
+}
+
+</style>
+
+</style>
+{% endblock %}
+
+
+
+{% block profile_content %}
+{% load userprofiles_extras companies_extras %}
+
+{% csrf_token %}
+  
+
+  <article id="components">
+    
+    <div class="component-set">
+      <div class="container-fluid">
+      	<h1 class="text-center">Примеры хорошего кода</h1><a href="{% url 'components' %}" class="btn  btn-warning  thin  pull-right">веб-компоненты</a>
+      </div>
+    </div>
+
+    <div class="component-set">
+    	<div class="container-fluid">
+    		<br>
+    		<a class="btn btn-success normal pull-left" data-toggle="modal" data-target="#code_modal">{% trans "Новый пример" %}</a>
+        <a href="{% url 'code_filter' code_tag='all' sort_direction='asc' %}" class="btn btn-default normal pull-left" id="all_filter_asc">all</a>
+        <a href="{% url 'code_filter' code_tag='git' sort_direction='asc' %}" class="btn btn-default normal pull-left" id="git_filter_asc">git</a>
+        <a href="{% url 'code_filter' code_tag='javascript' sort_direction='asc' %}" class="btn btn-default normal pull-left" id="javascript_filter_asc">javascript</a>
+        <a href="{% url 'code_filter' code_tag='django' sort_direction='asc' %}" class="btn btn-default normal pull-left" id="django_filter_asc">django</a>
+        <a href="{% url 'code_filter' code_tag='python' sort_direction='asc' %}" class="btn btn-default normal pull-left" id="python_filter_asc">python</a>
+        <a href="{% url 'code_filter' code_tag='html' sort_direction='asc' %}" class="btn btn-default normal pull-left" id="html_filter_asc">html</a>
+        <a href="{% url 'code_filter' code_tag='css' sort_direction='asc' %}" class="btn btn-default normal pull-left" id="css_filter_asc">css</a>
+        <a href="{% url 'code_filter' code_tag='tip' sort_direction='asc' %}" class="btn btn-default normal pull-left" id="tip_filter_asc">tip</a>
+        <br>
+    		<!-- Modal new -->
+    		<div class="modal fade" id="code_modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    		  <div class="modal-dialog">
+    		    <div class="modal-content">
+    		      <div class="modal-header">
+    		        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+    		        <h4 class="modal-title" id="myModalLabel">{% trans "Добававить пример кода" %}</h4>
+    		      </div>
+    		      <div class="modal-body">
+    		        <form action="{% url 'code_add' %}" method='POST' id="code_form">
+    		          {% csrf_token %}
+                  <div class="form-group">
+                    <label for="{{ code_form.title.auto_id }}" class="form-control">{{ code_form.title.label }}</label>
+                    {{ code_form.title|attr:'class=form-control' }}
+                  </div>
+                  <div class="form-group">
+                    <label for="{{ code_form.tag.auto_id }}" class="form-control">{{ code_form.tag.label }}</label>
+                    {{ code_form.tag|attr:'class=form-control' }}
+                    <p class="help-block">Укажите метку для поиска вашего примера</p>
+                  </div>
+                  <div class="form-group">
+                    <label for="{{ code_form.description.auto_id }}" class="form-control">{{ code_form.description.label }}</label>
+                    {{ code_form.description|attr:'class=form-control input-xs' }}
+                  </div>
+                  <div class="form-group">
+                    <label for="{{ code_form.code.auto_id }}" class="form-control">{{ code_form.code.label }}</label>
+                    {{ code_form.code|attr:'class=form-control input-sm' }}
+                  </div>
+    		        </form>
+    		      </div>
+    		      <div class="modal-footer">
+    		        <button type="button" class="btn btn-default normal" data-dismiss="modal">{% trans "Отмена" %}</button>
+    		        <button type="submit" form="code_form" class="btn btn-standard">{% trans "Сохранить" %}</button>
+    		      </div>
+    		    </div>
+    		  </div>
+    		</div>
+    	</div>
+    </div>
+    
+    {% for code in code_list %}
+    <div class="component-set">
+    	<div class="component-name">{{ code.title }}<br><code>{{ code.tag }}</code></div>
+      <div class="container-fluid">
+        <blockquote>{{ code.description }}</blockquote>
+        {% if code.code %}<pre><code class="{{ code.language }}">{{ code.code }}</code></pre>{% endif %}
+        <br>
+        <a href="{% url 'code_edit' code_id=code.id %}" data-fancybox-type="ajax" class="code_edit btn btn-standard pull-left" title="Edit code example">{% trans "Редактировать" %}</a>
+        <a class="btn btn-danger normal pull-right" data-toggle="modal" data-target="#code_delete">{% trans "Удалить" %}</a>
+        <!-- Modal delete -->
+    		<div class="modal fade" id="code_delete" tabindex="-1" role="dialog" aria-labelledby="myModalLabel2" aria-hidden="true">
+    		  <div class="modal-dialog">
+    		    <div class="modal-content">
+    		      <div class="modal-header">
+    		        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+    		        <h4 class="modal-title" id="myModalLabel">{% trans "Удаление примера кода" %}</h4>
+    		      </div>
+    		      <div class="modal-body">
+    		        <h4>{% trans "Вы уверены что хотите удалить пример?" %}</h4>
+    		      </div>
+    		      <div class="modal-footer">
+    		        <button type="button" class="btn btn-default normal" data-dismiss="modal">{% trans "Отмена" %}</button>
+    		        <a href="{% url 'code_delete' code_id=code.id %}" class="btn btn-danger normal pull-left" title="Delete code example">{% trans "Удалить" %}</a>
+    		      </div>
+    		    </div>
+    		  </div>
+    		</div>
+      </div>
+    </div>
+    {% endfor %}
+        
+  </article>
+  
+{% endblock %}
+
+
+
+{% block js %}
+{{ block.super }} 
+
+<script src="{{ STATIC_URL }}base_bootstrap_2015/js/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+<script>
+$(function(){ 
+  $('.code_edit').fancybox({ maxWidth: 700, minWidth: 500 });
+  $('#all_filter_asc, #git_filter_asc, #javascript_filter_asc, #django_filter_asc, #python_filter_asc, #html_filter_asc, #css_filter_asc, #tip_filter_asc').click(function(e) {
+    e.preventDefault();
+    var filter_url = $(this).attr('href');
+    $.post(filter_url, null, function(recieved_data) {
+      console.log(recieved_data);
+    });
+  }); 
+});
+</script>
+
+{% endblock %}
+
+
+
+

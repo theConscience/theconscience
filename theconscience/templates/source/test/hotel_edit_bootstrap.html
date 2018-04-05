@@ -1,0 +1,2438 @@
+{% extends "hotels/hotel_detail_bootstrap.html" %}
+{% load hotels_extras mptt_tags userprofiles_extras rate_codes_extras companies_extras i18n %}
+
+
+{% block page_title %}
+  {% if not metatags.get_meta_title %}  
+    {{ hotel.title }} - {{ supplier.contragent_title }}
+  {% else %}
+    {{ metatags.get_meta_title }}
+  {% endif %}
+{% endblock %}
+
+<!-- уже добавляются в hotel_detail_bootstrap.html
+{% comment %}
+
+{% block ui %}
+  {% include 'base_bootstrap_2015/ui_include.html' %}
+{% endblock %}
+
+{% block fancybox %}
+  {% include 'base_bootstrap_2015/fancybox_2_include.html' %}
+{% endblock %}  
+
+{% endcomment %}
+-->
+
+{% block css %}
+{{ block.super }}  
+<style>
+  {% for period in periods %}
+    {% if period.period.pk %}
+      .color-period-{{ period.period.pk }} {
+        background-color: rgb({{ forloop.counter|add:"1"|get_hex_color1 }});
+      }
+      .collapsed .color-period-{{ period.period.pk }} {
+        background-color: rgb(255, 255, 255);
+      }
+    {% endif %}
+  {% endfor %}
+  .ui-state-default { margin-bottom: 10px; }  
+  .ui-datepicker-calendar .ui-state-default { margin-bottom: 0; } 
+</style>
+
+<style>
+  #excursion_supplier_edit span.green,
+  .green {
+    color: green;
+  }
+</style>
+
+<style>
+  .hotel-detail-content { font-size: 1rem; }
+  .hotel-content,
+  .container-fluid.hotel-edit {
+    position: relative;
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .hotel-edit-header {
+    position: relative;
+    padding-top: 1.428em;
+    padding-left: 2.8571em;
+    padding-bottom: 1.428em;
+    border-bottom: 1px solid #DBDBDD;
+  }
+  .hs-title { font-size: .6em; }
+
+  /* перебиваю код из Hotel-detail-bootstrap :( */
+  .hotel-detail-base .component.tab-menu {
+    padding: 1.6em 1.6em;
+    margin: 0;
+  }
+  .hotel-detail-base .component.tab-menu a { font-size: 1.4em; }
+  /* end */
+
+  .top-controls {
+    padding-right: 3.1em;
+    padding-bottom: 1em;
+    padding-left: 4.1em;
+    background-color: #fff;
+  }
+  .top-controls:first-of-type { padding-top: 3em; }
+  .top-controls:last-of-type { padding-bottom: 4.4em; }
+  .top-controls h3 {
+    position: absolute;
+    padding-right: 31px;
+    margin-top: 6px;
+  }
+  .top-controls h3 a.video-link {
+    position: absolute;
+    display: inline-block;
+    right: 5px;
+    top: 0;
+    width: 16px;
+    height: 10px;
+    background-image: url('/static/base_bootstrap_2015/images/video.png');
+    background-repeat: no-repeat;
+    background-color: #fff;
+  }
+  .top-controls h3 a.video-link:hover { opacity: .8; }
+  .top-controls .tab-switcher {
+    float: left;
+    width: 100%;
+  }
+  .top-controls .tab-switcher .tab-menu {
+    padding-top: 0;
+    padding-left: 13em;
+  }
+  .top-controls .tab-switcher .tab-content {
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .toggle-hotel-details,
+  a#set-agepolicy-form,    /* этого ещё нет в shared_rate_codes_bootstrap и rate_codes_bootstrap */
+  a#set-checkinout-form {  /* этого ещё нет в shared_rate_codes_bootstrap и rate_codes_bootstrap */
+    color: #ef0f54;
+    border-bottom-width: 1px;
+    border-bottom-style: dashed;
+  }
+  .toggle-hotel-details:hover, 
+  a#set-agepolicy-form:hover,    /* этого ещё нет в shared_rate_codes_bootstrap и rate_codes_bootstrap */
+  a#set-checkinout-form:hover {  /* этого ещё нет в shared_rate_codes_bootstrap и rate_codes_bootstrap */
+    text-decoration: none;
+    border-bottom-width: 0;
+    color: #cd0d32;
+  }
+  .top-controls ul.tab-menu { padding-left: 13em; }
+  .invite-friend.invite-friend {
+    font-size: 14px;
+    position: absolute;
+    right: 31px;
+    bottom: 20px;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  @media screen and (max-width: 480px) {
+    .invite-friend.invite-friend {
+      position: relative;
+      margin-top: 10px;
+      right: auto;
+    }
+  }
+  .fa-arrows {
+    font-size: 1.9em;
+    color: #ef0e55;
+  }
+  .sorted-handle { cursor: pointer; }
+  .css-checkbox-wrap { min-height: 2em; }
+  .checkbox-cell { font-size: 10px; }
+  .price-module table { min-width: 600px; }
+  .price-module .module-header .css-checkbox-wrap label:before { left: -1.5em; }
+  .price-module .module-header .css-checkbox-wrap label:after { left: -1.26em; }
+  .price-module .module-header  .css-checkbox-wrap label { margin-left: 1.5em; }
+  .price-module thead th .css-checkbox-wrap {
+    font-size: 1em;
+    min-height: 1em;
+    margin-top: .3em;
+  }
+
+  .hotel-content p.calculation-module { padding-left: 4em; }
+  .selections-list { padding-left: 2.6666em; }
+
+  /* следующих стилей пока ещё нет в shared_rate_codes_bootstrap и rate_codes_bootstrap */
+  body.darken { position: relative; }
+  body.darken::after {
+    content: '';
+    position: absolute;
+    z-index: 100;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+  .collapse.rules { padding-top: 20px; }
+  .collapse-description {
+    font-size: 1.4rem;
+    line-height: 1;
+    padding-top: 12px;
+    padding-bottom: 10px;
+    margin-left: 30px;
+    margin-right: 30px;
+    margin-bottom: 36px;
+    border: 2px solid #3498DB;
+    text-align: center;
+    color: #3498DB;
+  }
+  .rules-text {
+    padding-left: 44px;
+    padding-right: 56px;
+    line-height: 1.9;
+    font-size: 16px;
+  }
+  .rules-text p { margin-bottom: 30px; }
+  .rules-text a {
+    color: #ef0e55;
+    text-decoration: underline;
+  }
+  .rules-text a:hover { text-decoration: none; }
+  .rules-text .form-group { margin-bottom: 5px; }
+  .rules-text .btn.btn-bright {
+    font-size: 14px;
+    padding: .7em 1em;
+    padding-left: .7em;
+    padding-right: 1.1em;
+  }
+  .rules-text .btn i {
+    top: .1em;
+    margin-right: .19em;
+  }
+  .bold { font-weight: bold }
+</style>
+
+<style>
+.features > form {  /* добавляем относительной позиционирование родителю нашего блока */
+  position: relative;
+}
+.fixed-buttons-wrapper {  /* базовые стили нашего блока, когда js не действует */
+  /* эти свойства подтянутся из компонента:
+  position: absolute;
+  width: 177px;
+  */
+  top: 50vh;
+  right: 15px;
+}
+.fixed-buttons-wrapper > .btn {  /* переопределяем отступы для текущей страницы */
+  margin-bottom: 14px;
+}
+</style>
+<link href="{{ STATIC_URL }}childpolicy/childpolicy.css" rel="stylesheet" type="text/css">
+{% endblock %}
+
+
+{% block js %}
+{{ block.super }}
+  <script src="{{ STATIC_URL }}hotels/js/hotel_edit_commands.js"></script>
+  <script src="{{ STATIC_URL }}hotels/js/hotel_edit.js"></script>
+  <script>
+    var childpolicy = '{{ childpolicy.ages|default:'' }}';
+    var hotel_pk={{ hotel.pk }};
+    var periods_count = {{ periods|length }};
+    var delete_periods_url = "{% url 'delete_periods' hotel_supplier_pk=hotel_supplier.pk %}";
+    var delete_services_url = "{% url 'delete_services' hotel_supplier_pk=hotel_supplier.pk %}";
+    var delete_meals_url = "{% url 'delete_meals' hotel_supplier_pk=hotel_supplier.pk %}";
+    var delete_staypays_url = "{% url 'delete_staypays' hotel_supplier_pk=hotel_supplier.pk %}";
+    var delete_staypay_bonuses_url = "{% url 'delete_staypay_bonuses' hotel_supplier_pk=hotel_supplier.pk %}";
+    var delete_eb_rates_url = "{% url 'delete_eb_rates' hotel_supplier_pk=hotel_supplier.pk %}";
+    var delete_bonuses_url = "{% url 'delete_bonuses' hotel_supplier_pk=hotel_supplier.pk %}";
+    var delete_salestax_url = "{% url 'delete_salestax' hotel_supplier_pk=hotel_supplier.pk %}";
+    var delete_conditional_taxes_url = "{% url 'delete_conditional_taxes' hotel_supplier_pk=hotel_supplier.pk %}";
+    var set_childpolicy_url = "{% url 'set_child_policy' hotel_supplier_pk=hotel_supplier.pk %}";
+    var set_childpolicy_form_url = "{% url 'set_childpolicy_hotel' hotel_supplier_pk=hotel_supplier.id %}";
+    var change_childpolicy_url = "{% url 'change_child_policy' hotel_supplier_pk=hotel_supplier.pk %}";
+    var add_period_url = "{% url 'add_period' hotel_supplier_pk=hotel_supplier.pk %}";
+    var add_surch_url = "{% url 'add_surch' hotel_supplier_pk=hotel_supplier.pk %}";
+    var add_service_url = "{% url 'add_service' hotel_supplier_pk=hotel_supplier.pk %}";
+    var add_service_related_url = "{% url 'add_service_related' hotel_supplier_pk=hotel_supplier.pk %}";
+    var set_meal_url = "{% url 'set_meal' hotel_supplier_pk=hotel_supplier.pk %}";
+    var add_meal_url = "{% url 'add_meal' hotel_supplier_pk=hotel_supplier.pk %}";
+    var change_meal_url = "{% url 'change_meal' hotel_supplier_pk=hotel_supplier.pk %}";
+    var set_rate_cs_url = "{% url 'set_rate_cs' hotel_supplier_pk=hotel_supplier.pk %}";
+    var set_rate_cs_conditioned_url = "{% url 'set_rate_cs_conditioned' hotel_supplier_pk=hotel_supplier.pk %}";
+    var set_rate_ml_url = "{% url 'set_rate_ml' hotel_supplier_pk=hotel_supplier.pk %}";
+    var change_rateeb_url = "{% url 'change_rate_eb' hotel_supplier_pk=hotel_supplier.pk %}";
+    var set_rateeb_url = "{% url 'set_rate_eb' hotel_supplier_pk=hotel_supplier.pk %}";
+    var set_raterb_url = "{% url 'set_rate_rb' hotel_supplier_pk=hotel_supplier.pk %}";
+    var set_rate_f_url = "{% url 'set_rate_f' hotel_supplier_pk=hotel_supplier.pk %}";
+    var set_staypay_url = "{% url 'set_stay_pay' hotel_supplier_pk=hotel_supplier.pk %}";
+    var set_staypay_bonus_url = "{% url 'set_stay_pay_bonus' hotel_supplier_pk=hotel_supplier.pk %}";
+    var flight_calculate_url = "{% url 'flight_calculate' hotel_supplier_pk=hotel_supplier.pk %}";
+    var more_periods_url = "{% url 'more_periods_bootstrap' hotel_supplier_pk=hotel_supplier.pk %}";
+    var add_bird_url = "{% url 'add_early_bird' hotel_supplier_pk=hotel_supplier.pk %}";
+    var add_period_commision_url = "{% url 'add_period_commision' hotel_supplier_pk=hotel_supplier.pk %}";
+    var set_room_order_url = "{% url 'set_room_order' hotel_supplier_pk=hotel_supplier.pk %}";
+    var set_rate_code_url = "{% url 'set_rate_code' hotel_supplier_pk=hotel_supplier.pk %}";
+    var add_room_url = "{% url 'add_company_room' hotel_supplier_pk=hotel_supplier.pk %}";
+    var delete_rooms_url = "{% url 'delete_company_rooms' hotel_supplier_pk=hotel_supplier.pk %}";
+    var change_room_url = "{% url 'change_company_rooms' hotel_supplier_pk=hotel_supplier.pk %}";
+    var base_hs_url = "{% url 'hotel_edit' hotel_supplier_pk=main_hotel_supplier.pk %}";
+    var add_tax_url = "{% url 'add_tax' hotel_supplier_pk=main_hotel_supplier.pk %}";
+    var add_conditional_tax_url = "{% url 'add_conditional_tax' hotel_supplier_pk=main_hotel_supplier.pk %}";
+    var add_restr_url = "{% url 'add_restr' hotel_supplier_pk=main_hotel_supplier.pk %}";
+    var add_bonus_url = "{% url 'add_bonus' hotel_supplier_pk=main_hotel_supplier.pk %}";
+    var check_spo_combine_url = "{% url 'check_spo_combine' hotel_supplier_pk=main_hotel_supplier.pk %}";
+    var spo_combine_url = "{% url 'spo_combine' hotel_supplier_pk=main_hotel_supplier.pk %}";
+    var staypay_spo_combine_url = "{% url 'staypay_spo_combine' hotel_supplier_pk=main_hotel_supplier.pk %}";
+    var create_combobonus_url = "{% url 'create_combobonus' hotel_supplier_pk=main_hotel_supplier.pk %}";
+    var spo_uncombine_url = "{% url 'spo_uncombine' hotel_supplier_pk=main_hotel_supplier.pk %}";
+    var get_cross_bonuses_url = "{% url 'get_cross_bonuses' hotel_supplier_pk=main_hotel_supplier.pk %}";
+    var send_complaint_url = "{% url 'calculation_complaint' hotel_supplier_pk=main_hotel_supplier.pk %}";
+    var delete_rates_url = "{% url 'delete_rates' hotel_supplier_pk=main_hotel_supplier.pk %}";
+    var delete_combo_bonus_url = "{% url 'delete_combo_bonuses' hotel_supplier_pk=main_hotel_supplier.pk %}";
+    var set_cancellation_policy_url = "{% url 'create_cansellation_policy' hotel_supplier_pk=main_hotel_supplier.pk %}";
+    var delete_cancellation_policy_url = "{% url 'delete_cancellation_policy' hotel_supplier_pk=main_hotel_supplier.pk %}";
+    var add_allotments_url = "{% url 'add_allotments' hotel_supplier_pk=main_hotel_supplier.pk %}";
+    var cancelallot_url = "{% url 'cancel_allotments' hotel_supplier_pk=main_hotel_supplier.pk %}";
+    var check_transfers_rate_code_url = "{% url 'check_transfers_rate_code' hotel_supplier_pk=hotel_supplier.pk %}";
+    var publicate_hotel_prices = "{% url 'publicate_hotel_prices' hotel_supplier_pk=hotel_supplier.id %}";
+    var add_restr_form_url = "{% url 'add_restr_earlybird_bootstrap' hotel_supplier_pk=hotel_supplier.id  %}";
+    var period_error = "{% trans 'Период размещения должен быть в пределах существующих периодов' %}"
+    var csrf_token = "{{ csrf_token }}";
+  </script>
+  <script src="{{ STATIC_URL }}childpolicy/childpolicy.js" type="text/javascript"></script>
+  <script>
+  $(function() {
+    $('.copy-hotel-supplier').fancybox({
+      maxWidth: 750,
+      scrolling: 'auto',
+      hideOnOverlayClick: false,
+      titleShow: false,
+      padding: [30, 27, 30, 30],
+      afterShow: function() {
+        $('.fancybox-desktop').draggable();
+      }
+    });
+
+    $('.add-compulsory-service-rate').fancybox({
+      titleShow: false,
+      width: 750,
+      scrolling: 'auto',
+      hideOnOverlayClick: false,
+      padding: [30, 27, 30, 30],
+      afterLoad: function(a) {
+        var elem = a.element.context;
+        $(elem).parent().siblings('.checkbox-cell').find('input[name=services]').prop('checked', true);
+        $(elem).closest('tr').siblings().find('input').prop('checked', false);
+      },
+      afterShow: function() {
+        $('.fancybox-desktop').draggable();
+      }
+    });
+
+    $('a.add_restr').fancybox({
+      padding: [30, 27, 30, 30],
+      afterLoad: function(a) {
+        var elem = a.element.context;
+        //$.fancybox.close();
+        if ($(elem).hasClass('eb')) {
+          var earlybirds_data = $('input[name=earlybirds]').serialize();
+          add_restr_form_url = '{% url "add_restr_earlybird_bootstrap" hotel_supplier_pk=hotel_supplier.id  %}';
+          if (!earlybirds_data) {
+            alert('Please, choose early bird');
+            $.fancybox.cancel();
+            return false;
+          }
+        } else if ($(elem).hasClass('b')) {
+          var bonuses = $('input[name=bonuses]').serialize();
+          add_restr_form_url = '{% url "add_restr_bonus" hotel_supplier_pk=hotel_supplier.id  %}';
+          if (!bonuses) {
+            alert('Please, choose bonuses');
+            $.fancybox.cancel();
+            return false;
+          }
+        }
+      },
+      afterShow: function() {
+        $('.fancybox-desktop').draggable();
+      }
+    });
+  });
+
+  function copy_hotel_supplier_submit(copy_hotel_supplier_url) {
+    selected_obj = $('#id_contragent_list li.active');
+    selected_id = selected_obj.attr('id');
+    if (selected_id) {
+      $.post(copy_hotel_supplier_url, {
+        'supplier': selected_id
+      }, function(data) {
+        //$('#fancybox-content').html(data);
+        window.location.href = data.url;
+      });
+    } else {
+      alert('Choose supplier');
+    }
+  }
+  </script>
+
+  <script>
+  $(function() {
+    $('#transfer_is_must').change(function() {
+      kwargs = {};
+      if (this.checked) {
+        kwargs['checked'] = 1;
+        $.post("{% url 'transfer_is_must' hotel_supplier_pk=hotel_supplier.id %}", kwargs, function(data) {
+          if (data.answer == '1') {
+            $("#transfer_is_must_response").fadeIn(500, function() {
+              $('#transfer_is_must_response').fadeOut(500);
+            });
+          } else {
+            $("#transfer_is_must_response_error").fadeIn(500, function() {
+              $('#transfer_is_must_response_error').fadeOut(500);
+            });
+          }
+        });
+      } else {
+        kwargs['checked'] = 0;
+        $.post("{% url 'transfer_is_must' hotel_supplier_pk=hotel_supplier.id %}", kwargs, function(data) {
+          if (data.answer == '1') {
+            $("#transfer_is_must_response").fadeIn(500, function() {
+              $('#transfer_is_must_response').fadeOut(500);
+            });
+          } else {
+            $("#transfer_is_must_response_error").fadeIn(500, function() {
+              $('#transfer_is_must_response_error').fadeOut(500);
+            });
+          }
+        });
+      }
+    });
+  });
+  </script>
+
+<script>     
+  $(function() {
+
+    $('#in_hotel_edit_check_errors,\
+        #add_room_form, #add-meal-form,\
+        #set-agepolicy-form,\
+        #connect_to_rate_code_form, \
+        #connect_to_rate_code_button,\
+        #add-restaurant-or-bar, \
+        #view_meal_details').fancybox({
+      maxWidth: 750,
+      scrolling: 'auto',
+      hideOnOverlayClick: false,
+      padding: [30, 27, 30, 30],
+      afterShow: function() {
+        $('.fancybox-desktop').draggable();
+      },
+      beforeClose: function() {
+        //console.log($(this));
+        //console.log(this, this.id);
+        //super_object_cool = this;
+        //super_object_cool_2 = $(this);
+        if (this.element['0'].id == 'set-agepolicy-form') {
+          $("html, body").animate({
+            scrollTop: 0
+          });
+          console.log('set-agepolicy-form fancybox closing...');
+          $('#set-agepolicy-form').popover('show');
+        }
+        if (this.element['0'].id == 'add_room_form') {
+          console.log('add_room_form fancybox closing...');
+          $('#add_room_form').popover('show');
+        }
+        if (this.element['0'].id == 'add-meal-form') {
+          console.log('add-meal-form fancybox closing...');
+          $('#add-meal-form').popover('show');
+        }
+      }
+    });
+
+    $('#room_rate_wizard, #edit_room_discounts, #edit_room_prices, #edit_eb_prices_bootstrap').fancybox({
+      maxWidth: 750,
+      scrolling: 'auto',
+      hideOnOverlayClick: false,
+      padding: [30, 27, 30, 30],
+      afterShow: function() {
+        $('.fancybox-desktop').draggable({cancel: ".fancybox-inner .table-responsive, input, select, textarea"});
+      }
+    });
+
+    $('#set-checkinout-form').fancybox({
+      maxWidth: 750,
+      scrolling: 'no',
+      autoResize: true,
+      hideOnOverlayClick: false,
+      padding: [30, 27, 30, 30],
+      afterShow: function() {
+        $('.fancybox-desktop').draggable();
+      }
+    });
+
+    $('a#inline').fancybox({
+      scrolling: 'auto',
+      hideOnOverlayClick: false,
+      padding: [30, 27, 30, 30],
+      afterShow: function() {
+        $('.fancybox-desktop').draggable();
+      }
+    });
+
+    $('#set-stay-pay-form').fancybox({
+      scrolling: 'auto',
+      hideOnOverlayClick: false,
+      padding: [30, 27, 30, 30],
+      $rooms_table: $('.price-module-rooms'),
+      $rooms_table_clone: $('.price-module-rooms').clone(),
+      afterShow: function() {
+        $('.fancybox-desktop').draggable();
+      },
+      beforeClose: function() {
+        this.$rooms_table.html(this.$rooms_table_clone.html());
+      }
+    });
+
+    $('#add-bird-form').fancybox({
+      scrolling: 'auto',
+      padding: [30, 27, 30, 30],
+      $rooms_table: $('.price-module-rooms'),
+      $rooms_table_clone: $('.price-module-rooms').clone(),
+      afterShow: function() {
+        $('.fancybox-desktop').draggable();
+      },
+      beforeClose: function() {
+        this.$rooms_table.html(this.$rooms_table_clone.html());
+      }
+    });
+
+    $('#add-bonus-form').fancybox({
+      scrolling: 'auto',
+      padding: [30, 27, 30, 30],
+      afterShow: function() {
+        $('.fancybox-desktop').draggable();
+      }
+    });
+
+    $('#add-cancellation-policy').fancybox({
+      scrolling: 'auto',
+      padding: [30, 27, 30, 30],
+      afterLoad: function() {
+        /* проверка: выбрана ли комната */
+        var rooms_selected = false;
+        $('input[name=rooms]').each(function(i, checkbox) {
+          if ($(checkbox).prop('checked')) {
+            rooms_selected = true;
+          }
+        });
+        if (!rooms_selected) {
+          alert('Rooms not selected');
+          $.fancybox.cancel();
+          return false;
+        }
+        /* проверка: выбран ли период */
+        var periods_selected = false;
+        $('input[name=periods]').each(function(i, checkbox) {
+          if ($(checkbox).prop('checked')) {
+            periods_selected = true;
+          }
+        });
+        if (!periods_selected) {
+          if (!confirm('Periods not selected')) {
+            $.fancybox.cancel();
+            return false;
+          }
+        }
+      },
+      afterShow: function() {
+        $('.fancybox-desktop').draggable();
+      }
+    });
+  });
+  </script>
+
+  <script>
+    /* .price-module.component javascript */
+    $(function() {
+      $('.price-module').each(function(index, value) {
+        $(this).click(function(e) {
+          var activeModule = index;
+          if ($(this).hasClass('collapsed')) {
+            if (e.target.tagName === 'A' && e.target.getAttribute('data-fancybox-type') === "ajax") {
+              //console.log('tag name, data-fancybox-type = ' + e.target.tagName + ' ' + e.target.getAttribute('data-fancybox-type'));
+              e.preventDefault();
+            }
+
+            {% if childpolicy and rooms|length and periods|length and meals|length %}
+              $('.price-module').addClass('collapsed');
+            {% endif %}
+
+            $(this).removeClass('collapsed');
+            var moduleScrollTop = parseInt($(this).offset().top) - 90;
+            /* var moduleScrollTop = parseInt($(this).offset().top) - 150; чтобы модуль был не с самого верха страницы а с отступом*/
+            $("html, body").animate({
+              scrollTop: moduleScrollTop
+            });
+            $('.price-module').each(function(index, value) {
+              if (index < activeModule) {
+                $(this).addClass('collapsed-top').removeClass('collapsed-bottom');
+              } else if (index > activeModule) {
+                $(this).addClass('collapsed-bottom').removeClass('collapsed-top');
+              }
+            });
+          } 
+        });
+      });
+    });
+  </script>
+
+  <script>
+    /* костыль для отключения ссылок :) */
+    function blockClick(evt) {
+      evt.preventDefault();
+    }
+  </script>
+
+  <script>
+    var url_for_sorting = "{% url 'hotel_rooms_sort' hotel_pk=hotel.id company_pk=company.id %}";
+    $('.sorted-block').sortable({
+      containment: '.sorted-block',
+      handle: '.sorted-handle',
+      scroll: false,
+      axis: 'y',
+      cursorAt: {
+        top: 0
+      },
+      tolerance: 'pointer',
+      activate: function(e, ui) {
+        ui.item.css({
+          'opacity': 0.5
+        });
+      },
+      stop: function(e, ui) {
+        ui.item.animate({
+          'opacity': 1
+        });
+      },
+      update: function(event, ui) {
+        var room_ids = []
+        $('.sorted').each(function(i, item) {
+          var room_id = $(item).find('[name=rooms]').val();
+          room_ids[i] = room_id;
+        });
+        $.ajax({
+          url: url_for_sorting,
+          type: 'post',
+          data: {
+            'rooms': room_ids
+          },
+          error: function(e) {
+            for (var i in e) {
+              console.log(e[i])
+            }
+          },
+        });
+      },
+    });
+  </script>
+
+<script>
+  /* Направляем пользователя и учим работать с системой *\
+    блокировка .price-module'й : CSS-класс .deactivate
+  \*----------------------------------------------------*/
+
+  // 1. Политика по Детям не задана:
+  {% if not childpolicy %}
+
+    $(function(){
+      $('#collapse_rules').collapse('show');
+      var info_paragraph = $('#first-tab .rates-info');
+      info_paragraph.addClass('hidden');
+      $('#second-tab-button, #fourth-tab-button').addClass('disabled'); 
+    });    
+
+    /* $('#collapse_rules').on('hidden.bs.collapse', function() {
+      var info_paragraph = $('.rates-info');
+      info_paragraph.removeClass('hidden');
+      $('#first-tab-button').addClass('disabled');
+      $('#third-tab-button').removeClass('disabled');
+      $('#third-tab-button').tab('show');
+      console.log($("#add_room_form"));
+      $("#set-agepolicy-form").trigger("click");
+    });*/
+
+    $('#third-tab-button').on('shown.bs.tab', function() {
+      console.log('#third-tab shown');
+      $('#set-agepolicy-form').popover('show');
+    });
+
+    $('#third-tab-button').on('hide.bs.tab', function() {
+      console.log('#third-tab hiding..');
+      $('#set-agepolicy-form').popover('hide');
+    });
+
+  {% endif %}
+
+  $('#collapse_rules').on('hidden.bs.collapse', function() {
+    var info_paragraph = $('.rates-info');
+    info_paragraph.removeClass('hidden');
+    {% if not childpolicy %}
+      $('#third-tab-button').tab('show');
+      console.log($("#add_room_form"));
+      $("#set-agepolicy-form").trigger("click");
+    {% endif %}
+  });
+
+  $('#collapse_rules').on('show.bs.collapse', function() {
+    var info_paragraph = $('#first-tab .rates-info');
+    info_paragraph.addClass('hidden');
+  })
+
+  $('#collapse_rules').on('hide.bs.collapse', function() {
+    var can_close = $(this).find('input[type=checkbox]').prop('checked');
+    console.log(can_close);
+    if (!can_close) {
+      return false;
+    }
+  });
+
+
+  $(function(){
+
+    // console.log('Чайлдполиси: {{ childpolicy }}');
+    // console.log('Количество комнат: {{ rooms|length }}');
+    // console.log('Количество периодов: {{ periods|length }}');
+    // console.log('Количество питаний: {{ meals|length }}');
+
+    // 2. Ни одной комнаты не создано:
+    {% if childpolicy and not rooms|length %}
+      $("#add_room_form").trigger("click");
+    {% endif %}
+
+    // 3. Нет периодов и питания:
+
+
+    // 4. Нет периодов:
+    {% if childpolicy and rooms|length and not periods|length %}
+      $('#add-period-form').popover('show');
+    {% endif %}
+
+    // 5. Нет питания:
+    {% if childpolicy and rooms|length and not meals|length %}
+      $('#add-meal-form').popover('show');
+    {% endif %}
+
+    // 6. Если ни у одной комнаты ещё не указана максимальная вместимость - показываем подсказку
+    if (!$('.set-maximum-occupancy:first').closest('tbody').find('.maximum-occupancy-is-set').get(0)) {
+      $('.set-maximum-occupancy:first').popover('show');
+    }
+
+
+  });
+
+</script>
+
+<script>
+  // активируем всплывающие подсказки кнопкам
+  $('#fixed-buttons-menu [data-toggle="popover"]').popover();
+</script>
+
+{% comment %}
+<script>
+  /* Функция пока не используется, т.к. вместо js было решено использовать шаблонный фильтр Django */
+  function crop_text(element_class) {
+    var elements = $(element_class);
+    elements.each(function(index) {
+      var element = $(this);
+      console.log(element);
+      var full_text = element.text();
+      console.log(full_text);
+      var crop_length = element.data('cropTextValue');
+      console.log(crop_length);
+      var cropped_text = full_text.slice(0, crop_length);
+      console.log(cropped_text);
+      element.text(cropped_text);
+    });
+  }
+  /* Этот функционал реализован с помощью шаблонного фильтра, ибо так универсальнее */
+  //crop_text('.js-crop-text');
+</script>
+{% endcomment %}
+
+{% endblock js %}
+  
+  
+{% block hotel_detail_content %}
+{% csrf_token %}
+<div class='container-fluid hotel-edit' id="hotel_edit">  
+  
+  <header class="hotel-edit-header font-size-14 clearfix">
+    <h2>{{ hotel.title }}</h2>
+    <a href="{% url 'hotel_list' %}"><span class='font-size-13'>{% trans "Back to hotels list" %}</span></a>
+    |
+    <a href="{% url 'hotel_edit_old' hotel_supplier_pk=hotel_supplier.pk %}"><span class='font-size-13'>{% trans "Old design" %}</span></a>
+    {% if childpolicy %}
+    <a class="btn  btn-bright normal invite-friend copy-hotel-supplier" href="{% url 'hotel_supplier_copy_bootstrap' hotel_supplier_pk=hotel_supplier.pk %}"  data-fancybox-type="ajax"><i class="icon-copy"></i>{% trans "Copy hotel supplier" %}</a>
+    {% endif %}
+  </header>
+
+  <section class="top-controls clearfix">
+    <h3>{% trans "Prices" %} <a href="http://www.youtube.com/watch?v={% if request.LANGUAGE_CODE == 'ru' %}rururur{% else %}enenenen{% endif %}" class="video-link"></a></h3>
+    <div role="tabpanel" id="main-tab" class="tab-switcher component">
+      <!-- Nav tabs (оригинальные классы бутстрапа для ul - .nav.nav-tabs) -->
+      <ul class="tab-menu  component" role="tablist">
+        <li role="presentation" class="active no-padding-right">
+          <a href="#first-tab" id="first-tab-button" aria-controls="basic-prices" role="tab" data-toggle="tab">
+            {% with hotel_supplier.hotelsupplierratecode_set.all as hs_rate_codes %}
+              {% for hs_rate_code in hs_rate_codes %}
+                {{ hs_rate_code }} {{ hs_rate_code.rate_code.title }}
+              {% empty %}
+                {% trans "Net Rates" %}
+              {% endfor %}
+            {% endwith %}
+          </a>
+        </li>
+        <li role="presentation" class="no-padding"><span class="font-size-14">/</span></li>
+        <li role="presentation" class="no-padding-left"><a href="#second-tab" id="second-tab-button" class="js-crop-text" data-crop-text-value="10" aria-controls="child-policy" role="tab" data-toggle="tab">{{ supplier.contragent_title|get_elements:'0:13' }}</a></li>
+        <li role="presentation"><a href="#third-tab" id="third-tab-button" aria-controls="child-policy" role="tab" data-toggle="tab">{% trans "Child policy" %}</a></li>
+        <li role="presentation"><a href="#fourth-tab" id="fourth-tab-button" aria-controls="check-in-out" role="tab" data-toggle="tab">{% trans "Check in & Check out" %}</a></li>
+      </ul>
+      
+      {% csrf_token %}
+      <!-- Tab panes -->
+      <div class="tab-content">
+
+        <div role="tabpanel" class="tab-pane active" id="first-tab">
+          <!-- Вы работаете с базовыми ценами отеля, к которым в любой момент можно сделать наценку и отправить в виде прайсов вашим партнерам -->
+          <p class="rates-info">
+            {% trans "You edit BASE hotel rates that you can mark up and sent to your partners" %}. 
+            <a class="toggle-hotel-details" data-toggle="collapse" href="#collapse_rules" aria-expanded="false" aria-controls="collapse_rules">{% trans "Details" %}</a>
+          </p>
+          <div class="collapse rules" id="collapse_rules">
+            <header class="collapse-description">
+              {% trans "All information in this section is strictly confidential and available in your personal account only" %}
+            </header>
+            <div class="rules-text center-block">
+              <p>
+                {% trans "This section will help you to create price lists for all tourist market with any mark-up, using light and handy tools for your work - Base rates, unique Rate-codes for each market, availability in your property, Stop-Sales, availability for every market or a partner and much more." %}
+              </p>
+              <p>
+                {% trans "To get started with the basic price fill in background information for your hotel - Child Policy, then - periods, types of meal plan available and the types of accommodation in each room. Set the base price for your hotel and each room that will be available only for you. Make the necessary details - prices for axtra beds, special offers, the cancellation policies. In the future, on the basis of these prices, you can create any number of price lists for each of your market or partner by quickly adding the required mark-up to the base price in percentage or absolute terms." %}
+              </p>
+              <div class="form-group center-block text-center">
+                <div class="css-checkbox-wrap">
+                  <input type="checkbox" name="checkbox-set" id="rules_accept">
+                  <label for="rules_accept">{% trans "This is clear to me. Do not show me this text again." %}</label>
+                </div>
+              </div>
+              <button class="btn btn-bright center-block" data-toggle="collapse" href="#collapse_rules" aria-expanded="false" aria-controls="collapse_rules">
+                <i class="fa fa-times"></i> {% trans "Close text" %}
+              </button>
+            </div>
+          </div>
+
+          {% if hotel_supplier.pk != main_hotel_supplier.pk %}
+            {% for bird in birds %}
+              {% if hotel_supplier.pk == bird.hotel_supplier.pk %}
+                <div class="helvetica-medium">{% trans "Early bird / Special offer code" %}: <span class="font-size-18" style="color: red;">{{ bird.tourcode }}</span></div class="helvetica-bold">
+              {% endif %}
+            {% endfor %}
+          {% endif %} 
+
+          <!-- dev8: спросить у Димы какой аналог у этой формы, ибо пока не ясно -->
+          {% if price_type_form %}
+            <div class="bird-price-type">
+              <div class="row">
+                <form action="{% url 'change_bird_price_type_bootstrap' hotel_supplier_pk=hotel_supplier.pk %}" method="POST">
+                  <div class="col-sm-5">
+                    <h4>{% trans "Promo Price type" %}</h4>
+                    <div class="price-type-fields">
+                       {{ price_type_form.price_type }}
+                       {{ price_type_form.price_type.errors }}
+                    </div>
+                    <div class="submit font-size-10"><input type="submit" class="btn btn-standard" value="{% trans 'Change Price Type' %}"></div>
+                    <br>
+                  </div>
+                  <div class="col-sm-5 col-md-6 col-lg-7">
+                    <div class="comment"><span>{% trans "ATTENTION" %}:</span> 
+                      <ol>
+                        <li>{% trans "You can change price type only once" %}</li>
+                        <li>{% trans "All Combination Bonuses with this Special Offer will be deleted" %}</li>
+                      </ol>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+          {% endif %}
+        </div>
+
+        <div role="tabpanel" class="tab-pane" id="second-tab">
+          <div class="row">
+
+            <div class="col-sm-6">
+              <h4 class="helvetica-medium font-size-14">{% trans "My rates from my suppliers" %}</h4>
+              {% for hotel_supplier in hotel_suppliers %}
+                <div>
+                  <a href="{% url 'hotel_edit' hotel_supplier_pk=hotel_supplier.pk %}"{% if not hotel_supplier.public_version %} style="color: #EF0F54;" {% endif %}> 
+                    {{ hotel_supplier.supplier.contragent_title }} 
+                  </a>
+                </div>
+              {% endfor %}
+            </div>
+            
+            <div class="col-sm-6">
+              <h4 class="helvetica-medium font-size-14">{% trans "Shared rates from another suppliers" %}</h4>
+              <table>
+              {% with all_hotel_suppliers|get_by_key:hotel.pk as hotel_suppliers %}
+              {% with shared_hotel_suppliers|get_by_key:hotel.pk as hs_rate_codes %}
+
+                {% for hotel_supplier in hotel_suppliers %}
+                <tr>
+                  <td> 
+                    {% for rate_code in rate_codes|get_by_key:hotel_supplier.pk %}
+                      <a href="{% url 'rate_code_hotel' hs_rate_code_pk=rate_code.pk %}">
+                        <small 
+                          {% if rate_code.public_version %}
+                            style="color:#0f741a"
+                          {% else %}
+                            style="color:#ef0f54"
+                          {% endif %}
+                        >
+                        {{ rate_code.rate_code.title }} {{ rate_code.rate_code.code }}</small>
+                      </a>{% if not forloop.last %},{% endif %}
+                    {% endfor %}
+                  </td>
+                  <!-- <td id="childpolicy_{{ hotel_supplier.pk }}">{% if hotel_supplier.childpolicy %}{% endif %}</td>
+                  <td><input type="checkbox" name="hotels" class="hs  pull-left"  value="{{ hotel_supplier.pk }}"></td> -->
+                </tr>
+                {% endfor %}
+                                             
+                {% for hs_rate_code in hs_rate_codes %}
+                <tr>               
+                  <td>                       
+                    <a href="{% url 'shared_rate_code_hotel_supplier' hs_rate_code_pk=hs_rate_code.pk %}">
+                      {% get_own_contragent_for_company request.user.company hs_rate_code.rate_code.company %}
+                    </a>                                            
+                    {% for hs_rc in shared_rate_codes|get_by_key:hs_rate_code.hotel_supplier_id %}       
+                      {% if hs_rc.parent.id == hs_rate_code.id %}
+                      <a href="{% url 'rate_code_hotel' hs_rate_code_pk=hs_rc.pk %}">
+                        <small>{{ hs_rc.rate_code.title }} {{ hs_rc.rate_code.code }}
+                        {% if not hs_rate_code.actual_hotel_supplier_rate_code %}
+                          Not publicated
+                        {% endif %}                  
+                        {% if not hs_rate_code.actual_hotel_supplier_rate_code %}
+                          Not publish
+                        {% endif %}   
+                        </small>
+                      </a>
+                      {% endif %}                 
+                    {% endfor %}
+                    
+                    {% if hs_rate_code.get_descendants %}
+                      {% make_hsrc_qs_for_hotel_list_template hs_rate_code.get_descendants company as hs_rc_lst %}
+                      <!-- Убираем hsrc у которых есть publish версия (чтобы не было такого 86EL4 not published, 86EL4 (т.е. РК показывается два раза) -->
+                      {% if hs_rc_lst %}
+                      <br>   
+                      <small style='color:green;display:inline-block;border-bottom:1px #999 dotted' class="rate_code_info">Connected to my rc:</small>
+                      <small style='color:green' class="rate_code_info">
+                      {% for hs_rc in hs_rc_lst %}                             
+                        {{ hs_rc.rate_code.code }} 
+                        {% if not hs_rc.actual_hotel_supplier_rate_code %}<span style='font-weight:bold;color:#ff0000'>not published</span>{% endif %}
+                        &nbsp;&nbsp;
+                        {% if not forloop.last %},{% endif %}   
+                      {% endfor %}
+                      </small>
+                      {% endif %}
+                    {% endif %}  
+                  </td>
+                  <!-- <td>
+                    <span style="color: #FF0000;" class="rate_code_info">{{ hs_rate_code.rate_code.code }}</span>
+                  </td>
+                  <td><input type="checkbox" name="hotels" class='hsrc  pull-left' value="{{ hs_rate_code.id }}"></td> -->
+                </tr>
+                {% endfor %}
+
+              {% endwith %}
+              {% endwith %} 
+              </table>
+            </div>
+
+          </div>
+        </div>
+
+        <div role="tabpanel" class="tab-pane childpolicy-block" id="third-tab">
+          <!--<h4>
+            {% if not childpolicy %}
+            <a class="font-size-14" id="set-agepolicy-form" href="{% url 'set_agepolicy_form_bootstrap' hotel_supplier_pk=main_hotel_supplier.pk %}" data-fancybox-type="ajax" data-trigger="focus" data-toggle="popover" data-placement="right" data-content="{% trans 'Please set the child policy first!' %}">{% trans "Set age policy" %}</a>
+            {% endif %}
+          </h4>-->
+          {% if childpolicy %}
+            <div id="childpolicyDiv">
+              <span>{% trans "Age groups" %}:</span>
+              <ul>
+                {% for child in childpolicy_splitted %}
+                  <li>{{ child }}</li>
+                {% endfor %}
+              </ul>
+            </div>
+          {% else %}
+            <span class="bold">{% trans "Установите возрастные группы" %}:</span>
+            {% if childpolicy_form %}
+              {% include 'base_app/set_childpolicy_form.html' %}
+            {% endif %}
+          {% endif %}  
+        </div>
+
+        <div role="tabpanel" class="tab-pane" id="fourth-tab">
+          <h4>
+            <a class="font-size-14" id="set-checkinout-form" href="{% url 'set_checkinout_bootstrap' hotel_supplier_pk=main_hotel_supplier.pk %}" data-fancybox-type="ajax">{% trans "Change Check-in & Check-out" %}</a>
+          </h4>
+          <div>
+            {% if hotel_supplier.checkin %}
+              <span>{% trans "Checkin at" %} {{ hotel_supplier.checkin|time:"H:i" }}</span>
+              <br>
+            {% endif %}
+            {% if hotel_supplier.checkout %}
+              <span>{% trans "Checkout at" %} {{ hotel_supplier.checkout|time:"H:i" }}</span>
+            {% endif %}
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  {% comment %}
+  <!-- Так было до того как Дима попросил поменять, не удаляю - вдруг захочет обратно!
+  
+  <section class="top-controls clearfix">
+    <h3>{% trans "Prices" %}</h3>
+    <div role="tabpanel" class="tab-switcher component">
+      <!-- Nav tabs (оригинальные классы бутстрапа для ul - .nav.nav-tabs) -->
+      <ul class="tab-menu  component" role="tablist">
+        <li role="presentation" class="active"><a href="#third-tab" aria-controls="child-policy" role="tab" data-toggle="tab">{% trans "Child policy" %}</a></li>
+        <li role="presentation"><a href="#fourth-tab" aria-controls="check-in-out" role="tab" data-toggle="tab">{% trans "Check in & Check out" %}</a></li>
+      </ul>
+      <form action="" method="POST" class="form">
+      {% csrf_token %}
+        <!-- Tab panes -->
+        <div class="tab-content">
+          
+          <div role="tabpanel" class="tab-pane active" id="third-tab">
+            <h4>{% trans "Childpolicy" %} {% if not childpolicy %}<a style="font-size: 12px" id="set-agepolicy-form" href="{% url 'set_agepolicy_form_bootstrap' hotel_supplier_pk=main_hotel_supplier.pk %}" data-fancybox-type="ajax">({% trans "Set age policy" %})</a>{% endif %}
+            <br><a style="font-size: 12px" href="/unihotel_manual/hchildpolicy.html">Use <b>setage()</b> or <b>chage()</b> command.</a></h4>
+            <div id="childpolicyDiv">
+              {% if childpolicy %}
+                <span>{% trans "Age groups" %}:&nbsp;&nbsp;</span> 
+                <ul>
+                  {% for child in childpolicy_splitted %}
+                    <li>
+                      {{ child }}
+                    </li>
+                  {% endfor %}
+                </ul>
+              {% else %}
+                <div><span style="color:#f00;">{% trans "Age groups" %}</span> <span id="childpolicy"></span></div>
+              {% endif %}
+            </div>  
+          </div>
+
+          <div role="tabpanel" class="tab-pane" id="fourth-tab">
+            <h4>
+              {% trans "Check-in & Check-out" %}
+              <br>
+              <a style="font-size: 12px" id="set-checkinout-form" href="{% url 'set_checkinout_bootstrap' hotel_supplier_pk=main_hotel_supplier.pk %}" data-fancybox-type="ajax">({% trans "Change Check-in & Check-out" %})</a>
+            </h4>
+            <div>
+              {% if hotel_supplier.checkin %}
+                <span>if{% trans "Checkin at" %} {{ hotel_supplier.checkin|time:"H:i" }}</span>
+                <br>
+              {% endif %}
+              {% if hotel_supplier.checkout %}
+                <span>{% trans "Checkout at" %} {{ hotel_supplier.checkout|time:"H:i" }}</span>
+              {% endif %}
+            </div>
+          </div>
+
+        </div>
+      </form>
+    </div>
+  </section>
+
+  -->
+  {% endcomment %}
+
+
+  <!--  dev8: этого похоже вообще не должно быть на этой странице -->
+  <!--
+  {% comment %} 
+  {% with excursion_supplier.excursionsupplierratecode_set.all as hs_rate_codes %}
+    <h3>{% trans "Tour Codes" %}:</h3>
+    {% for hs_rate_code in hs_rate_codes %}
+      <p class="font-size-13">{{ hs_rate_code }}</p>
+    {% endfor %}
+  {% endwith %}
+
+  {% if childpolicy %}
+    <p class="font-size-13"><strong>Child Policy:</strong> <span id="childpolicy">{{ childpolicy }}</span></p>
+  {% else %}
+    <p class="font-size-13"><span style="color:#ff0000;">Child Policy</span> <span id="childpolicy"></span></p>
+  {% endif %}
+  {% endcomment %}
+  -->
+
+  {% get_eb_rb_from_formuls rooms hotel_supplier as eb_rb_show %}
+  {% with hotel_supplier.may_add_prices as hotel_supplier_may_add_prices %} 
+  <form id="rooms_form" method="POST">
+    {{ order_formset.management_form }}
+    <div class="price-module price-module-rooms component {% if not childpolicy %}deactivated{% endif %}">
+      <header class="module-header clearfix">
+        <div class="clearfix">
+          <h3 class="pull-left"><i class="icon-bed2"></i> {% trans "Rooms" %}</h3>
+          <div class="pull-right">
+            <a href="{{ MEDIA_URL }}upload/how_to_input_rates.pdf">{% trans "How to input rates" %} ?</a>
+            <a class="btn  btn-standard" id="add_room_form" href="{% url 'add_room_form_bootstrap' hotel_supplier_pk=hotel_supplier.pk %}" data-fancybox-type="ajax" data-trigger="focus" data-toggle="popover" data-placement="top" data-content="{% trans 'Please set at least one room' %}"><i class="fa fa-plus"></i>{% trans "Add room" %}</a>
+          </div>
+        </div>
+        {% if rooms|length %}
+        <p class="font-size-14">{% trans "Please set the sequence as it is in your rate list from your partner or hotel to put the rates more quickly. Just click and hold than move." %}</p>
+        {% endif %}
+      </header>
+      {% if rooms %}
+      <div class="table-responsive">
+        <table class="data-table form" id="rooms_table">
+          <thead>
+            <tr>
+              <th>{% trans "Order" %}</th>
+              <th>{% trans "Room name" %}</th>
+              <th>{% trans "Max occupancy" %}</th>
+              <th>{% trans "Rate" %}</th>
+              <th>{% trans "EB/RB rate" %}</th>
+              <th class="width-6proc"></th>
+              <th class="checkbox_select_all width-6proc text-center">
+                <div class="css-checkbox-wrap">
+                  <input type="checkbox" name="select_all_rooms" id="select_all_rooms">
+                  <label for="select_all_rooms"></label>
+                </div>
+              </th>
+            </tr>
+          </thead>
+          <tbody class="sorted-block ui-sortable">
+            {% for room_item in rooms|dictsort:"order" %}
+            {% with room_item.room as room %}
+            <tr class="sorted">
+              <td class="room-order sorted-handle-block text-center">
+                <i class="fa fa-arrows sorted-handle ui-sortable-handle" title="{% trans 'Move' %}"></i>
+              </td>
+              <td class="title">
+                <strong class="title-name">{{ room.title }}</strong> <span>(ID: {{ room_item.index }})</span>
+                <br>
+                <a href="{% url 'room_features' room_pk=room.id company_pk=company.id %}">{% trans "Room features" %}</a> <a href="{% url 'room_description' company_pk=company.id room_pk=room.pk  %}">{% trans "Room description" %}</a>
+              </td>
+              <td>
+                {% if room_paxes|get_by_key:room.pk %}
+                  <strong>
+                  {% if not room.occupancy %}
+                    {% trans "Max" %} {{ room_paxes|get_by_key:room.pk }} {% trans "pax." %}
+                  {% else %}
+                    {% with room.occupancy|split:"or" as occupancy_list %}
+                      {% for occupancy in occupancy_list %}
+                        {{ occupancy }}{% if forloop.counter != occupancy_list|length %},{% endif %} 
+                      {% endfor %}
+                    {% endwith %}
+                  {% endif %}
+                  </strong>
+                  <br>
+                  {% if childpolicy %}
+                     <a href="{% url 'room_accommodations' room_pk=room.pk hotel_supplier_pk=hotel_supplier.pk %}" class="maximum-occupancy-is-set">{% trans "See details" %}</a>
+                  {% endif %}
+                {% else %}
+                  <a href="{% url 'room_accommodations' room_pk=room.pk hotel_supplier_pk=hotel_supplier.pk %}" class="set-maximum-occupancy" data-trigger="manual" data-toggle="popover" data-placement="bottom" data-content="{% trans 'Please add maximum occupancy first' %}">{% trans "Set maximum occupancy" %}</a>
+                {% endif %}
+              </td>
+              <td>
+                {% if hotel_supplier_may_add_prices and not room.roomrate_set.all %}
+                  <a href="{% url 'add_room_prices_bootstrap' hotel_supplier_pk=hotel_supplier.pk %}" id="room_rate_wizard" data-fancybox-type="ajax">{% trans "Rate Wizard" %}</a>
+                {% endif %}
+                {% if room.roomrate_set.all and hotel_supplier_may_add_prices %}
+                  {% if early_bird and early_bird.price_type == 1 %} 
+                    <a href="{% url 'edit_room_discounts_bootstrap' hotel_supplier_pk=hotel_supplier.pk %}" id="edit_room_discounts" data-fancybox-type="ajax">{% trans "View" %}</a>
+                  {% else %}
+                    <a href="{% url 'edit_room_prices_bootstrap' hotel_supplier_pk=hotel_supplier.pk %}" id="edit_room_prices" data-fancybox-type="ajax">{% trans "View" %}</a>
+                   {% endif %}
+                {% endif %}
+              </td>
+              <td>
+                {% if 'EB' in eb_rb_show %}
+                  <a href="{% url 'edit_eb_prices_bootstrap' hotel_supplier_pk=hotel_supplier.id type='EB' %}" id="edit_eb_prices_bootstrap" data-fancybox-type="ajax">{% trans "Edit" %} <b>EB</b> {% trans "prices" %}</a>
+                  <br>
+                {% endif %}
+        
+                {% if 'RB' in eb_rb_show %}
+                  <a href="{% url 'edit_eb_prices_bootstrap' hotel_supplier_pk=hotel_supplier.id type='RB' %}" id="edit_eb_prices_bootstrap" data-fancybox-type="ajax">{% trans "Edit" %} <b>RB</b> {% trans "prices" %}</a>
+                {% endif %}
+              </td>
+              <td class="width-6proc">
+                <a href="#" class="room-link"><i class="icon-bed1"></i></a>
+              </td>
+              <td class="width-6proc checkbox-cell">
+                <div class="css-checkbox-wrap">
+                  <input type="checkbox" name="rooms" value="{{ room.pk }}" id="room-checkbox-{{ forloop.counter }}">
+                  <label for="room-checkbox-{{ forloop.counter }}"></label>
+                </div>
+              </td>
+            </tr>
+            {% endwith %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <section class="module-buttons clearfix">
+        <a href='{% url "in_hotel_edit_check_errors_bootstrap" hotel_supplier_pk=hotel_supplier.pk %}' class="font-size-14" id='in_hotel_edit_check_errors' data-fancybox-type="ajax">{% trans "Check for errors" %} ({% trans "open in modal window" %})</a>
+      </section>
+      {% endif %}  
+    </div>
+  </form>
+  {% endwith %}
+
+
+  <form action="" id="periods_form">
+    <div class="price-module  price-module-periods component {% if childpolicy and rooms|length and not meals|length or not periods|length %}{% else %}collapsed{% endif %} collapsed-bottom {% if not childpolicy or rooms|length < 1 %}deactivated{% endif %}">
+      <header class="module-header clearfix">
+        <h3 class="pull-left"><i class="icon-seasons"></i> {% trans "Periods / Seasons" %}</h3>
+        <div class="pull-right">
+          {% if more_periods %}
+            <a href="#" id="more-periods">{% trans "More periods" %}</a>
+          {% endif %}
+          <a class="btn btn-standard add-period" id="add-period-form" href="{% url 'add_period_form_bootstrap' hotel_supplier_pk=main_hotel_supplier.pk %}" data-fancybox-type="ajax" data-trigger="focus" data-toggle="popover" data-placement="top" data-content="{% trans 'Please set at least one period' %}"><i class="fa fa-plus"></i>{% trans "Add period" %}</a>
+        </div>
+      </header>
+      <div id="periods-load"></div>
+      {% if periods %}
+      <div class="table-responsive">
+        <div class="table-responsive">
+          <table class="data-table" id="periods_table">
+            <thead>
+              <tr>
+                <th>{% trans "From" %}</th>
+                <th>{% trans "To" %}</th>
+                <th>{% trans "Name" %}</th>
+                <th>{% trans "Min Stay" %}</th>
+                <th>{% trans "Compulsory" %}</th>
+                <th>{% trans "Restrictions" %}</th>
+                <th class="width-6proc"></th>
+                <th class="width-6proc checkbox-cell text-center">
+                  <div class="css-checkbox-wrap">
+                    <input class="checkbox-cell" type="checkbox" name="select_all" id="select_all">
+                    <label for="select_all"></label>
+                  </div>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for period in periods %}
+              <tr {% if period.type == 'gap' %}style="color:#ff0000;"{% endif %} class="color-period-{{ period.period.pk }}">
+                <td><span>{{ period.date_from|date:"d/m/y" }}</span></td>
+                <td><span>{{ period.date_to|date:"d/m/y" }}</span></td>
+                <td class="title">
+                  <strong>
+                  {% if period.type == 'gap' %}
+                    Undefined
+                  {% else %} 
+                    {% if period.period.title %}
+                      {{ period.period.title }}
+                    {% else %}
+                      {{ period.date_from|date:"d/m/y" }} - {{ period.date_to|date:"d/m/y" }}
+                    {% endif %}     
+                  {% endif %}
+                  </strong>
+                </td>
+                <td>
+                  <strong>{{ period.period.ms|default:"" }}</strong>
+                  {% if period.period.ms > 1 %}
+                    <a href="{% url 'add_ms_validity_terms_bootstrap' period_pk=period.period_id %}" class="period-restrictions" data-fancybox-type="ajax">R</a>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if period.type != 'gap' %}
+                    {% if period.period.service_type == '-' %}
+                      &mdash;
+                    {% else %}
+                      {{ period.period.service_type }}
+                    {% endif %}
+                  {% endif %}
+                </td>
+                <td>
+                  {% if period.period %}
+                    <a href="{% url 'period_restrictions_bootstrap' period_pk=period.period.id %}" class="period-restrictions" data-fancybox-type="ajax">R</a>
+                  {% endif %}
+                </td>
+                <td class="width-6proc">
+                  {% if period.period %}
+                  <a href="{% url 'change_period_bootstrap' period_pk=period.period_id %}" class="edit-row edit_doc" title="{% trans 'Change period' %}" data-fancybox-type="ajax"><i class="icon-edit2"></i></a>
+                  {% endif %}
+                </td>
+                <td class="width-6proc checkbox-cell">
+                  {% if period.type != 'gap' %}
+                    <div class="css-checkbox-wrap">
+                      <input class="checkbox-cell" type="checkbox" name="periods" id="period_checkbox_{{ forloop.counter }}" value="{{ period.period.pk }}">
+                      <label for="period_checkbox_{{ forloop.counter }}"></label>
+                    </div>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </form>
+  <!-- end Periods -->
+  
+
+  {% comment %} 
+  {% if extra_bed_rates %}
+  <!-- Закомментировано по указу ДС, данный функционал вроде бы был перенесён в Rooms - edit EB rates
+  <div class="price-module component collapsed collapsed-bottom">
+    <header class="module-header clearfix">
+      <h3 class="pull-left"><i class="icon-food"></i>{% trans "Extra Beds" %}</h3>     
+      <div class="pull-right">
+        <a href="#" id="show_hide_extra_bed_rates">{% trans "Show/hide" %}</a>
+        {% if early_bird and early_bird.eb_expanding and early_bird.price_type == 1 %} 
+          <a href="{% url 'change_early_bird_eb_discount_bootstrap' early_bird_pk=early_bird.pk %}" class="btn  btn-bright change-discount" data-fancybox-type="ajax">{{ early_bird.eb_discount }}{% trans "% Off" %}</a>
+        {% endif %}
+      </div>
+    </header>
+    <form id="extra_bed_rates_table"  style="display:none;">
+      <table class="data-table left-table">
+        <thead>
+          <tr>
+            <th>{% trans "Type" %}</th>
+            <th>{% trans "Period" %}</th>
+            <th>{% trans "Room" %}</th>
+            <th>{% trans "Rates" %}</th>
+            <th class="checkbox-cell" style="font-size: 10px;">
+              <div class="css-checkbox-wrap">
+                <input type="checkbox" name="select_all_eb_rates" id="select_all_eb_rates">
+                <label for="select_all_eb_rates"></label>
+              </div>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for extra_bed_rate in extra_bed_rates %}
+          <tr class="color-period-{{ extra_bed_rate.period_id }}">
+            <td>
+              <strong>{{ extra_bed_rate.get_type_display }}</strong>
+            </td>
+            <td><span>{{ extra_bed_rate.period.title }}</span></td>
+            <td><span>{{ extra_bed_rate.room.title }}</span></td>
+            <td><span>{{ extra_bed_rate.rates }}</span> <strong>{{ extra_bed_rate.exchange.char_code }}</strong></td>
+            <td class="width-6proc checkbox-cell">
+              <div class="css-checkbox-wrap">
+                <input type="checkbox" name="extra_bed_rates" id="extra_bed_checkbox_{{ forloop.counter }}" value="{{ extra_bed_rate.pk }}">
+                <label for="extra_bed_checkbox_{{ forloop.counter }}"></label>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </form>
+  </div>
+  {% endif %}
+  -->
+  <!-- end Extra beds -->
+  {% endcomment %}
+
+  <div class="price-module price-module-compulsory-services component collapsed collapsed-bottom {% if not childpolicy or rooms|length < 1 or periods|length < 1 or meals|length < 1 %}deactivated{% endif %}">
+    <header class="module-header clearfix">
+      <div class="clearfix">
+        <h3 class="pull-left"><i class="icon-ok"></i>{% trans "Compulsory Services " %}</h3>     
+        <div class="pull-right">
+          <a href="#" id="show_hide_extra_bed_rates">{% trans "More services" %}</a>
+          {% if early_bird and early_bird.cs_expanding and early_bird.price_type == 1 %} 
+            <a class="btn  btn-bright  normal change-discount" href="{% url 'change_early_bird_cs_discount_bootstrap' early_bird_pk=early_bird.pk %}" data-fancybox-type="ajax">{{ early_bird.cs_discount }}{% trans "% Off" %}</a>
+          {% endif %}
+          <a class="btn btn-standard add-period" id="add-compulsory-services" href="{% url 'add_compulsory_service_bootstrap' hotel_supplier_pk=hotel_supplier.pk %}" data-fancybox-type="ajax"><i class="fa fa-plus"></i>{% trans "Add compulsory service" %}</a>
+        </div>
+      </div>
+      <div class="css-checkbox-wrap">
+        <input type="checkbox" name="transfer_is_compulsory" id='transfer_is_must' {% if hotel_supplier.transfer_is_must %}checked{% endif %}>
+        <label for="transfer_is_must">
+           {% trans "Transfer is compulsory when book a hotel" %}. <span id='transfer_is_must_response' style='color:green;display:none;'>{% trans "Data saved" %}!</span><span id='transfer_is_must_response_error' style='color:red;display:none;'>{% trans "Error occured" %}! {% trans "Contact with system administator" %}.</span>
+        </label>
+      </div>
+    </header>
+    {% if services %}
+      <form id="services_form">
+        <div class="table-responsive">
+          <table class="data-table"  id="service_table">
+            <thead>
+              <tr>
+                <th>{% trans "Date / title / type" %}</th>
+                <th>{% trans "Join type / Join inner date type" %}</th>
+                <th>{% trans "Rates" %}</th>
+                <th>{% trans "Tax" %}</th>
+                <th></th>
+                <th class="width-6proc checkbox-cell text-center">
+                  <div class="css-checkbox-wrap">
+                    <input class="checkbox-cell" type="checkbox" name="select_all_compulsory" id="select_all_compulsory">
+                    <label for="select_all_compulsory"></label>
+                  </div>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+            {% for service in services %}
+              <tr class="color-period-{{ extra_bed_rate.period_id }}">
+                <td class="title">
+                  {# minus_days service.date 1 as service_date #}
+                  <strong>{{ service.date|date:"d/m/y"|default:service.get_pay_type_display }}</strong>  / <strong class="title-name">{{ service.title }}</strong> / <strong>{{ service.get_per_type_display }}</strong>
+                </td>
+                <td>
+                  <span>{{ service.type }}</span> / <span>{{ service.day_type }}</span>
+                </td>
+                <td id="service_{{ service.pk }}">
+                  {% if service.rates and service.exchange %}
+                    <span>{{ service.rates }};{{ service.exchange.char_code }}</span>
+                  {% endif %}
+                  {% with service_rates|get_by_key:service.pk as rates %}
+                    {% for rate in rates %}
+                      <br>{% trans "If" %} <b>{{ rate.meal|default:rate.room }}</b>: <span>{{ rate.rates }};{{ rate.exchange.char_code }}</span>
+                    {% endfor %}
+                  {% endwith %}
+                  {% if childpolicy %}
+                  <a href="{% url 'add_compulsory_service_rate_bootstrap' hotel_supplier_pk=hotel_supplier.pk service_pk=service.pk %}" class="add-compulsory-service-rate" data-fancybox-type="ajax">{% trans "Set rate" %}</a>
+                  {% endif %}
+                </td>
+                <td>
+                  <strong>{{ service.is_tax|yesno:"Yes," }} </strong>
+                  {% if service.is_tax and service.period %}({{ service.period }}){% endif %}
+                </td>
+                <td class="width-6proc">
+                  <a href="{% url 'add_service_comment_bootstrap' service_pk=service.pk %}"
+          class="info-row room-comment {% if service.pk in comments.services %}with-comment{% endif %}" data-fancybox-type="ajax"><i class="icon-info"></i></a>
+                </td>
+                <td class="width-6proc checkbox-cell">
+                  <div class="css-checkbox-wrap">
+                    <input type="checkbox" name="services" id="services_checkbox_{{ forloop.counter }}" value="{{ service.pk }}">
+                    <label for="services_checkbox_{{ forloop.counter }}"></label>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </form>
+    {% endif %}
+  </div>
+  <!-- end of Compulsory -->
+
+
+  <div class="price-module price-module-meal component collapsed-bottom {% if childpolicy and rooms|length and not periods|length or not meals|length %}{% else %}collapsed{% endif %} {% if not childpolicy or rooms|length < 1 %}deactivated{% endif %}">
+    <header class="module-header clearfix">
+      <h3 class="pull-left"><i class="icon-food"></i>{% trans "Meal" %}</h3>
+      <div class="pull-right">
+        {% if early_bird and early_bird.meal_expanding and early_bird.price_type == 1 %}
+        <a class="btn btn-bright normal change-discount" href="{% url 'change_early_bird_meal_discount_bootstrap' early_bird_pk=early_bird.pk %}" data-fancybox-type="ajax">{{ early_bird.meal_discount }}{% trans "% Off" %}</a>
+        {% endif %}
+        <a class="btn btn-standard" id="add-meal-form" href="{% url 'add_meal_form_bootstrap' hotel_supplier_pk=main_hotel_supplier.pk %}" data-fancybox-type="ajax" data-trigger="focus" data-toggle="popover" data-placement="top" data-content="{% trans 'Please set at least one meal for adding prices' %}"><i class="fa fa-plus"></i>{% trans "Add meal" %}</a>
+      </div>
+    </header>
+    {% if meals %}
+    <form action="" id="meals_form">
+      <div class="table-responsive">
+        <table class="data-table" id="meal_table">
+          <thead>
+            <tr>
+              <th>{% trans "Meal" %}</th>
+              <th>{% trans "Rates" %}</th>
+              <th></th>
+              <th class="checkbox-cell width-6proc text-center">
+                <div class="css-checkbox-wrap">
+                  <input type="checkbox" name="select_all_meals" id="select_all_meals">
+                  <label for="select_all_meals"></label>
+                </div>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for meal in meals %}
+            <tr>
+              <td class="title">
+                <strong class="title-name">{{ meal.title }}</strong> {% if meal.type %}(<span class='green'>{{ meal.type }}</span>){% endif %} <span>(ID:{{ forloop.counter }})</span>
+              </td>
+              <td id="meal_{{ meal.pk }}">
+                <!-- <a href="" onClick="window.open('{# url 'edit_meal_prices' hotel_supplier_pk=hotel_supplier.pk #}', name, 'height=500,width=1000,resizable=yes,scrollbars=yes'); return false;">{# trans "View" #}</a> -->
+                <a href="{% url 'edit_meal_prices_bootstrap' hotel_supplier_pk=hotel_supplier.pk %}" id="view_meal_details" data-fancybox-type="ajax">{% trans "View" %}</a>
+              </td>
+              <td class="width-6proc">
+                <a href="#" class="edit-row" style="opacity: .5; cursor: default;" onclick="blockClick(event)"><i class="icon-edit2"></i></a>
+              </td>
+              <td class="width-6proc checkbox-cell">
+                <div class="css-checkbox-wrap">
+                  <input type="checkbox" name="meals" value="{{ meal.pk }}" id="meal-checkbox-{{ forloop.counter }}">
+                  <label for="meal-checkbox-{{ forloop.counter }}"></label>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </form>
+    {% endif %}
+  </div>
+  <!-- end of Meal -->
+
+  <!-- {% comment %}
+    НЕ ПРОВЕРЕНО!
+  {% endcomment %} -->
+  {% if transfers %}
+  <div class="price-module price-module-transfers component collapsed collapsed-bottom {% if not childpolicy or rooms|length < 1 or periods|length < 1 or meals|length < 1 %}deactivated{% endif %}">
+    <header class="module-header clearfix">
+      <h3 class="pull-left"><i class="icon-plane"></i>{% trans "Transfers" %}</h3>
+    </header>
+    <form action="" id="transfers_form">
+      <div class="table-responsive">
+        <table class="data-table" id="meal_table">
+          <thead>
+            <tr>
+              <th>{% trans "Index" %}</th>
+              <th>{% trans "From" %}</th>
+              <th>{% trans "To" %}</th>
+              <th>{% trans "Description" %}</th>
+              <th>{% trans "Duration" %}</th>
+              <th>{% trans "Serving from" %}</th>
+              <th>{% trans "Number" %}</th>
+              <th>{% trans "Rates" %}</th>
+              <th></th>
+              <th class="checkbox-cell width-4proc text-center">
+                <div class="css-checkbox-wrap">
+                  <input type="checkbox" name="select_all_transfers" id="select_all_transfers">
+                  <label for="select_all_transfers"></label>
+                </div>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for transfer in transfers %}
+            <tr>
+              <td>
+                <strong>{{ transfer.index }}</strong>
+              </td>
+              <td>
+                From <strong>
+                {% if transfer.from_type == 'H' %} Hotel {% endif %}
+                {% if transfer.from_type == 'Apt' %} {{ transfer.from_apt }} ({{ transfer.from_apt.iata_code }}) {% endif %}
+                </strong>
+                {% if transfer.from_type == 'Reg' %} Resort: <strong>{{ transfer.from_resort.title_en }}<strong> {% if transfer.from_area_id %}Area: <strong>{{transfer.from_area}}</strong>{% endif %} {% endif %}</strong>
+                {% if transfer.from_type == 'S' %} Site: <strong>{{ transfer.from_site }}</strong>{% endif %}</strong>
+              </td>
+              <td>  
+                to <strong>{% if transfer.to_type == 'H' %} Hotel {% endif %}
+                {% if transfer.to_type == 'Apt' %} {{ transfer.to_apt }} ({{ transfer.to_apt.iata_code }}) {% endif %}</strong>
+                {% if transfer.to_type == 'Reg' %} Resort: <strong>{{ transfer.to_resort.title_en }}<strong> {% if transfer.to_area_id %}Area: <strong>{{transfer.to_area}}</strong>{% endif %} {% endif %}</strong>
+                {% if transfer.to_type == 'S' %} Site: <strong>{{ transfer.to_site }}</strong>{% endif %}</strong>
+              </td>
+              <td class="title">{{ transfer.description }}</td>
+              <td>{{ transfer.duration|time:"H:i" }}</td>
+              <td>{{ transfer.serving_from|time:"H:i" }}-{{ transfer.serving_to|time:"H:i" }}</td>
+              <td>{{ transfer.number }}</td>
+              <td>
+                {% for rate in transfer.transferrate_set.all %}
+                  {{ period }}: 
+                  {% if rate.reverse %}RT{% else %}OW{% endif %}
+                  {{ rate.unit }}{% if rate.unit == 'u' %}={{ rate.unit_count }}{% endif %};
+                  {{ rate.rates }} {{ rate.exchange.char_code }}<br>
+                {% endfor %}
+              </td>
+              <td class="width-6proc checkbox-cell">
+                <div class="css-checkbox-wrap">
+                  <input type="checkbox" name="transfers" value="{{ transfer.pk }}" id="transfer-checkbox-{{ forloop.counter }}">
+                  <label for="transfer-checkbox-{{ forloop.counter }}"></label>
+                </div>
+              </td>
+              <td class="width-6proc">
+                <a class="edit-row" href="#" style="opacity: .5; cursor: default;" onclick="blockClick(event)"><i class="icon-edit2"></i></a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </form>
+  </div>
+  {% endif %}
+  <!-- end of Transfers -->
+
+
+  <!-- {% comment %}
+    НЕ ПРОВЕРЕНО!
+  {% endcomment %} -->
+  {% if sales_taxes %}
+  <div class="price-module price-module-sales-tax component collapsed collapsed-bottom {% if not childpolicy or rooms|length < 1 or periods|length < 1 or meals|length < 1 %}deactivated{% endif %}">
+    <header class="module-header clearfix">
+      <h3 class="pull-left"><i class="icon-food"></i>{% trans "Sales Tax" %}</h3>
+    </header>
+    <form action="" id="sales_tax_form">
+      <div class="table-responsive">
+        <table class="data-table" id="sales_tax_table">
+          <thead>
+            <tr>
+              <th>{% trans "Date" %}</th>
+              <th>{% trans "Name" %}</th>
+              <th>{% trans "Rate" %}</th>
+              <th></th>
+              <th class="checkbox-cell width-4proc text-center">
+                <div class="css-checkbox-wrap">
+                  <input type="checkbox" name="select_all_taxes" id="select_all_taxes">
+                  <label for="select_all_taxes"></label>
+                </div>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for tax in sales_taxes %}
+            <tr>
+              <td>
+                <strong>{{ tax.date_start|date:"d/m/y" }}</strong>
+              </td>
+              <td class="title">
+                <span>{{ tax.title }}</span>
+              </td>
+              <td><span>{{ tax.rate }}%</span></td>
+              <td class="width-6proc checkbox-cell">
+                <div class="css-checkbox-wrap">
+                  <input type="checkbox"  name="taxes" value="{{ tax.pk }}" id="tax-checkbox-{{ forloop.counter }}">
+                  <label for="tax-checkbox-{{ forloop.counter }}"></label>
+                </div>
+              </td>
+              <td class="width-6proc">
+                <a class="edit-row" href="#" style="opacity: .5; cursor: default;" onclick="blockClick(event)"><i class="icon-edit2"></i></a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </form>
+  </div>
+  {% endif %}
+  <!-- end of Sales Taxes -->
+
+
+  <!-- {% comment %}
+    НЕ ПРОВЕРЕНО!
+  {% endcomment %} -->
+  {% if conditional_taxes %}
+  <div class="price-module price-module-tax-plus component collapsed collapsed-bottom {% if not childpolicy or rooms|length < 1 or periods|length < 1 or meals|length < 1 %}deactivated{% endif %}">
+    <header class="module-header clearfix">
+      <h3 class="pull-left"><i class="icon-food"></i>{% trans "Tax Plus" %}</h3>
+    </header>
+    <form action="" id="conditional_tax_form">
+      <div class="table-responsive">
+        <table class="data-table" id="sales_tax_table">
+          <thead>
+            <tr>
+              <th>{% trans "Date" %}</th>
+              <th>{% trans "Name" %}</th>
+              <th>{% trans "Rate" %}</th>
+              <th></th>
+              <th class="checkbox-cell width-4proc text-center">
+                <div class="css-checkbox-wrap">
+                  <input type="checkbox" name="select_all_conditional_taxes" id="select_all_conditional_taxes">
+                  <label for="select_all_conditional_taxes"></label>
+                </div>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for tax in conditional_taxes %}
+            <tr>
+              <td>
+                <strong>{{ tax.date_start|date:"d/m/y" }}</strong>
+              </td>
+              <td class="title">
+                <span>{{ tax.title }}</span>
+              </td>
+              <td><span>{{ tax.rate }}%</span></td>
+              <td class="width-6proc checkbox-cell">
+                <div class="css-checkbox-wrap">
+                  <input type="checkbox"  name="conditional_taxes" value="{{ tax.pk }}" id="tax-plus-checkbox-{{ forloop.counter }}">
+                  <label for="tax-plus-checkbox-{{ forloop.counter }}"></label>
+                </div>
+              </td>
+              <td class="width-6proc">
+                <a class="edit-row" href="#" style="opacity: .5; cursor: default;" onclick="blockClick(event)"><i class="icon-edit2"></i></a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </form>
+  </div>
+  {% endif %}
+  <!-- end of Conditional Taxes -->
+
+
+  {# if staypays #}
+  {% comment %}
+  <!--  Этот блок перенесён в Special Offers
+  <div class="price-module component collapsed collapsed-bottom">
+    <header class="module-header clearfix">
+      <h3 class="pull-left"><i class="icon-food"></i>{% trans "StayPay" %}</h3>
+      <div class="pull-right">
+        <a href="" id="show_hide_staypays">{% trans "Show/hide" %}</a>
+        <a href="{% url 'set_stay_pay_form_bootstrap' hotel_supplier_pk=main_hotel_supplier.pk %}" class="btn  btn-standard" id="set-stay-pay-form" data-fancybox-type="ajax"><i class="fa fa-plus"></i>{% trans "Add StayPay" %}</a>
+      </div>
+    </header>
+    <form action="" id="staypay_form">
+      <div class="table-responsive">
+        <table class="data-table" id="staypays_table" style="display: none;">
+          <thead>
+            <tr>
+              <th>{% trans "Dates" %}</th>
+              <th>{% trans "Room" %}</th>
+              <th>{% trans "Max Repeat" %}</th>
+              <th>{% trans "Data" %}</th>
+              <th>{% trans "Params" %}</th>
+              <th>{% trans "Meals" %}</th>
+              <th>{% trans "Tour code" %}</th>
+              <th colspan=2></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for staypay in staypays %}
+            <tr>
+              <td>
+                <strong>{{ staypay.date_from|date:"d/m/y" }}</strong> - <strong>{{ staypay.date_to|date:"d/m/y" }}</strong>
+              </td>
+              <td>
+                <span>{{ staypay.room }}</span>
+              </td>
+              <td>
+                <span>{{ staypay.count }}</span>
+              </td>
+              <td>
+                <span>Stay <strong>{{ staypay.stay_nights }}</strong> Pay <strong>{{ staypay.pay_nights }}</strong></span>
+              </td>
+              <td>
+                <span>
+                EB={{ staypay.eb_expanding|yesno:"Y,N" }}, 
+                M={{ staypay.meal_type }}, 
+                CS={{ staypay.cs|yesno:"Y,N" }}
+                </span>
+              </td>
+              <td>
+                {% if staypay.meal_type == 'c' %}
+                  {% for meal in staypay.meals.all %}
+                  <strong>{{ meal }}</strong><br>
+                  {% endfor %}
+                {% endif %}
+              </td>
+              <td class="title">
+                <span>{{ staypay.tour_code }}</span>
+              </td>
+              <td class="width-6proc checkbox-cell">
+                <div class="css-checkbox-wrap">
+                  <input type="checkbox"  name="staypays" value="{{ staypay.pk }}" id="staypay-checkbox-{{ forloop.counter }}">
+                  <label for="staypay-checkbox-{{ forloop.counter }}"></label>
+                </div>
+              </td>
+              <td class="width-6proc">
+                <a href="#" class="edit-row" style="opacity: .5; cursor: default;" onclick="blockClick(event)"><i class="icon-edit2"></i></a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </form>
+  </div>
+  {# endif #}
+  <!-- end of StayPay -->
+  -->
+  {% endcomment %}
+
+
+  <!-- {% comment %}
+    НЕ ПРОВЕРЕНО!
+  {% endcomment %} -->
+  {% if stay_pay_bonuses %}
+  <div class="price-module price-module-bonus-nights roomcomponent collapsed collapsed-bottom {% if not childpolicy or rooms|length < 1 or periods|length < 1 or meals|length < 1 %}deactivated{% endif %}">
+    <header class="module-header clearfix">
+      <h3 class="pull-left"><i class="icon-food"></i>{% trans "Bonus Nights" %}</h3>
+    </header>
+    <form action="" id="staypay_bonuses_form">
+      <div class="table-responsive">
+        <table class="data-table" id="staypays_table">
+          <thead>
+            <tr>
+              <th>{% trans "From" %}</th>
+              <th>{% trans "To" %}</th>
+              <th>{% trans "Room" %}</th>
+              <th>{% trans "Meals" %}</th>
+              <th>{% trans "Max Repeat" %}</th>
+              <th>{% trans "Data" %}</th>
+              <th>{% trans "Params" %}</th>
+              <th>{% trans "Tour code" %}</th>
+              <th></th>
+              <th class="checkbox-cell width-4proc text-center">
+                <div class="css-checkbox-wrap">
+                  <input type="checkbox" name="select_all_staypays" id="select_all_staypay_bonuses">
+                  <label for="select_all_staypay_bonuses"></label>
+                </div>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for bonus in stay_pay_bonuses %}
+            {% with bonus.staypay_set.all.0 as staypay %}
+            <tr>
+              <td>
+                <strong>{{ staypay.date_from|date:"d/m/y" }}</strong>
+              </td>
+              <td>
+                <strong>{{ staypay.date_to|date:"d/m/y" }}</strong>
+              </td>
+              <td>
+                {% for stay_pay in bonus.staypay_set.all %}
+                  <span>
+                  {{ stay_pay.room }}
+                  {% if not forloop.last %}, {% endif %}
+                  </span>
+                {% endfor %}
+              </td>
+              <td>
+                {% if staypay.meal_type == 'c' %}
+                  {% for meal in staypay.meals.all %}
+                  <strong>{{ meal }}</strong><br>
+                  {% endfor %}
+                {% endif %}
+              </td>
+              <td>
+                <span>{{ staypay.count }}</span>
+              </td>
+              <td>
+                <span>{{ bonus }}</span>
+              </td>
+              <td>
+                <span>
+                EB={{ staypay.eb_expanding|yesno:"Y,N" }}, 
+                M={{ staypay.meal_type }}, 
+                CS={{ staypay.cs|yesno:"Y,N" }}
+                </span>
+              </td>
+              <td class="title">
+                <span>{{ staypay.tour_code }}</span>
+              </td>
+              <td class="width-6proc checkbox-cell">
+                <div class="css-checkbox-wrap">
+                  <input type="checkbox"  name="staypay_bonuses" value="{{ bonus.pk }}" id="staypay-bonuses-checkbox-{{ forloop.counter }}">
+                  <label for="staypay-bonuses-checkbox-{{ forloop.counter }}"></label>
+                </div>
+              </td>
+              <td class="width-6proc">
+                <a class="edit-row" href="#" style="opacity: .5; cursor: default;" onclick="blockClick(event)"><i class="icon-edit2"></i></a>
+              </td>
+            </tr>
+            {% endwith %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </form>
+  </div>
+  {% endif %}
+  <!-- end of Stay Pay bonuses -->
+
+
+  <div class="price-module price-module-special-offers component collapsed collapsed-bottom {% if not childpolicy or rooms|length < 1 or periods|length < 1 or meals|length < 1 %}deactivated{% endif %}">
+    <header class="module-header main-module-header clearfix">
+      <h3 class="bigger-margin"><i class="icon-percent"></i>{% trans "Special Offers" %}</h3>
+    </header>
+    
+    <header class="module-header clearfix">
+      <h4 class="pull-left">{% trans "Stay / Pay" %}</h4>
+      <div class="pull-right">
+        <!-- <a href="" id="show_hide_staypays">{% trans "collapse" %}</a> -->
+        <a class="btn btn-standard" id="set-stay-pay-form" href="{% url 'set_stay_pay_form_bootstrap' hotel_supplier_pk=main_hotel_supplier.pk %}" data-fancybox-type="ajax"><i class="fa fa-plus"></i>{% trans "Add StayPay" %}</a>
+      </div>
+    </header>
+    {% if staypays %}
+    <form action="" id="staypay_form">
+      {# csrf_token #}
+      <div class="table-responsive">
+        <table class="data-table" id="staypays_table">
+          <thead>
+            <tr>
+              <th>{% trans "Dates" %}</th>
+              <th>{% trans "Room" %}</th>
+              <th>{% trans "Max Repeat" %}</th>
+              <th>{% trans "Data" %}</th>
+              <th>{% trans "Params" %}</th>
+              <th>{% trans "Meals" %}</th>
+              <th>{% trans "Tour code" %}</th>
+              <th></th>
+              <th class="checkbox-cell width-4proc text-center">
+                <div class="css-checkbox-wrap">
+                  <input type="checkbox" name="select_all_staypays" id="select_all_staypays">
+                  <label for="select_all_staypays"></label>
+                </div>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for staypay in staypays %}
+            <tr>
+              <td>
+                <strong>{{ staypay.date_from|date:"d/m/y" }}</strong> - <strong>{{ staypay.date_to|date:"d/m/y" }}</strong>
+              </td>
+              <td>
+                <span>{{ staypay.room }}</span>
+              </td>
+              <td>
+                <span>{{ staypay.count }}</span>
+              </td>
+              <td>
+                <span>Stay <strong>{{ staypay.stay_nights }}</strong> Pay <strong>{{ staypay.pay_nights }}</strong></span>
+              </td>
+              <td>
+                <span>
+                EB={{ staypay.eb_expanding|yesno:"Y,N" }}, 
+                M={{ staypay.meal_type }}, 
+                CS={{ staypay.cs|yesno:"Y,N" }}
+                </span>
+              </td>
+              <td>
+                {% if staypay.meal_type == 'c' %}
+                  {% for meal in staypay.meals.all %}
+                  <strong>{{ meal }}</strong><br>
+                  {% endfor %}
+                {% endif %}
+              </td>
+              <td class="title">
+                <span>{{ staypay.tour_code }}</span>
+              </td>
+              <td class="width-6proc">
+                <a class="edit-row" href="#" style="opacity: .5; cursor: default;" onclick="blockClick(event)"><i class="icon-edit2"></i></a>
+              </td>
+              <td class="width-6proc checkbox-cell">
+                <div class="css-checkbox-wrap">
+                  <input type="checkbox"  name="staypays" value="{{ staypay.pk }}" id="staypay-checkbox-{{ forloop.counter }}">
+                  <label for="staypay-checkbox-{{ forloop.counter }}"></label>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </form>
+    {% endif %}
+
+    <header class="module-header clearfix">
+      <h4 class="pull-left">{% trans "Other special offers" %} ( {% if birds %}Early Bird{% endif %} )</h4>
+      <div class="pull-right">
+        <!-- <a href="" id="toggle_earlybirds">{% trans "collapse" %}</a> -->
+        {# if bird #}
+        {% if childpolicy %}
+        <a class="btn  btn-standard" id="add-bird-form" href="{% url 'add_bird_form_bootstrap' hotel_supplier_pk=main_hotel_supplier.pk %}" data-fancybox-type="ajax"><i class="fa fa-plus"></i>{% trans "Add early bird" %}</a>
+        {% endif %}
+        {# endif #}
+      </div>
+    </header>
+    {% if birds %}
+    <form id="earlybirds_form">
+      {% csrf_token %}
+      <div class="table-responsive">
+        <table class="data-table" id="earlybirds_table_id">
+          <thead>
+            <tr>
+              <th>{% trans "Title" %}</th>
+              <th class="no-vertical-padding"><small>{% trans "Booking" %}<br> {% trans "period" %}</small></th>
+              <th>{% trans "Accommodation dates" %}</th>
+              <th>{% trans "Discount" %}</th>
+              <th class="no-vertical-padding">
+                {% trans "Restrictions" %}
+                <br>
+                <a class="add_restr eb" href="{% url 'add_restr_earlybird_bootstrap' hotel_supplier_pk=main_hotel_supplier.pk %}" data-fancybox-type="ajax">{% trans "Add" %}</a> <a class="del_all_restr eb" href="{% url 'del_restr_earlybird_bootstrap' hotel_supplier_pk=main_hotel_supplier.id %}">{% trans "Delete" %}</a>
+              </th>
+              <th class="text-center">{% trans "Combinable" %}</th>
+              <th colspan=4></th>
+              <th class="checkbox-cell width-4proc text-center">
+                <div class="css-checkbox-wrap">
+                  <input type="checkbox" name="select_all_early_birds" id="select_all_early_birds">
+                  <label for="select_all_early_birds"></label>
+                </div>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <a href="{% url 'hotel_edit' hotel_supplier_pk=main_hotel_supplier.pk %}" class="biggest-text">{% trans "BASE" %}</a> 
+              </td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td class="width-4proc invisible">
+                <div class="css-checkbox-wrap">
+                  <input type="checkbox" name="checkbox-set" id="price-checkbox-10" checked="">
+                  <label for="price-checkbox-10"></label>
+                </div>
+              </td>
+              <td class="width-4proc invisible">
+                <a class="edit-row" href="#"><i class="icon-edit2"></i></a>
+              </td>
+            </tr>
+            {% for bird in birds %}
+            <tr>
+              <td class="width-15proc title">
+                 <a href="{% url 'hotel_edit' hotel_supplier_pk=bird.hotel_supplier.pk %}" class="bigger-text title-name">{{ bird.tourcode }}</a> <span>(ID: {{ forloop.counter }})</span>
+              </td>
+              <td>
+                <span>
+                  {% if bird.bron_date_from or bird.bron_date_to %}
+                    {{ bird.bron_date_from|date:"d.m.Y" }} - {{ bird.bron_date_to|date:"d.m.Y" }}
+                  {% else %}
+                    {% if bird.bron_period_terms == 'before' %}&gt;{% elif bird.bron_period_terms == 'less' %}&lt;{% endif %}{{ bird.bron_period }}{{ bird.bron_period_type }}
+                  {% endif %}
+                </span>
+              </td>
+              <td class="accommodation-dates">
+                <small>{{ bird.accommodation_date_from|date:"d.m.Y" }} -<br>{{ bird.accommodation_date_to|date:"d.m.Y"|plus_one_day }}</small>
+              </td>
+              <td>
+                <span>{{ bird.discount }}{% if bird.discount_type == 1 %}%{% endif %}</span>
+              </td>
+              <td>
+                <span>
+                  {% if bird.minstay %}Minstay={{ bird.minstay }}<br>{% endif %}
+                  {% if bird.guests %}Guests={{ bird.guests }}<br>{% endif %}
+                  {% if bird.accommodation %}Accommodation={{ bird.accommodation }}<br>{% endif %}
+                  {% if bird.sr_accommodation %}SRAccommodation={{ bird.sr_accommodation }}<br>{% endif %}
+                  {% if bird.d_type %}D<br>{% endif %}
+                </span>
+                {% if bird.countries.all %}
+                <br>
+                <b>{% trans "Countries" %}:</b><br>
+                <ul>
+                  {% for c in bird.countries.all %}
+                  <li>{{ c }}</li>
+                  {% endfor %} 
+                </ul>
+                {% endif %}   
+              </td>
+              <td class="text-center">
+                <a class="dotted-link bigger-text" href="#">
+                  {% for related_bird in bird.related_early_birds.all %}
+                    {{ birds_ref|get_by_key:related_bird.pk }}, 
+                  {% endfor %}
+                  {% for bonus in bird.bonus_set.all %}
+                    {{ bonuses_ref|get_by_key:bonus.pk }}, 
+                  {% endfor %}
+                </a>
+              </td>
+              <td class="width-4proc">
+                <a class="bigger-text period-restrictions" href="{% url 'add_early_bird_validity_terms_bootstrap' early_bird_pk=bird.pk %}" data-fancybox-type="ajax">R</a>
+              </td>
+              
+              <td class="width-4proc">
+                <a class="info-row room-comment {% if bird.pk in comments.birds %}with-comment{% endif %}" href="{% url 'add_early_bird_comment_bootstrap' early_bird_pk=bird.pk %}" data-fancybox-type="ajax"><i class="icon-info"></i></a>
+              </td>
+              <td class="width-4proc">
+                <a class="edit-row" href="#" style="opacity: .5; cursor: default;" onclick="blockClick(event)"><i class="icon-edit2"></i></a>
+              </td>
+              <td class="width-4proc">
+                <a class="delete-row" href="{% url 'delete_early_bird' early_bird_hs_pk=bird.hotel_supplier.pk %}" alt="{% trans 'Delete' %}" title="Delete"><i class="glyphicon glyphicon-trash"></i></a>
+              </td>
+              <td class="width-4proc checkbox-cell">
+                <div class="css-checkbox-wrap">
+                  <input type="checkbox" name="earlybirds" value="{{ bird.pk }}" id="earlybirds-checkbox-{{ forloop.counter }}">
+                  <label for="earlybirds-checkbox-{{ forloop.counter }}"></label>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+            <!--
+            <tr class="inactive">
+              <td class="width-15proc">
+                 <a href="" class="bigger-text">Раннее бронирование 15%</a> <span>(ID: 2)</span>
+              </td>
+              <td><span>> 60D</span></td>
+              <td><small>1 фев 2015 -<br>1 апр 2015</small></td>
+              <td><span>-15 %</span></td>
+              <td><span>Minstay=5</span></td>
+              <td class="text-center"><a href="#" class="dotted-link bigger-text">3</a></td>
+              <td class="width-4proc"><a href="#" class="bigger-text">R</a></td>
+              <td class="width-4proc">
+                <div class="css-checkbox-wrap">
+                  <input type="checkbox" name="checkbox-set" id="price-checkbox-11" checked="">
+                  <label for="price-checkbox-11"></label>
+                </div>
+              </td>
+              <td class="width-4proc">
+                <a href="#" class="info-row"><i class="icon-info"></i></a>
+              </td>
+              <td class="width-4proc">
+                <a href="#" class="edit-row"><i class="icon-edit2"></i></a>
+              </td>
+              <td class="width-4proc">
+                <a href="#" class="delete-row"><i class="glyphicon glyphicon-trash"></i></a>
+              </td>
+            </tr>
+            -->
+          </tbody>
+        </table>
+      </div>
+    </form>
+    {% endif %}
+
+    <section class="module-buttons clearfix">
+      {% if staypays and birds %}
+      <a class="btn btn-disabled btn-bright pull-left normal" id="staypay-spo-combine" href="#"><i class="icon-link"></i>{% trans "Stay Pay & SPO combine" %}</a>
+      {% endif %}
+      <a class="btn btn-bright pull-left normal disabled" href="#"><i class="icon-link"></i>{% trans "Find accordance" %}</a> 
+    </section>
+  </div>
+  <!-- end of special offers -->
+
+
+  <!-- {% comment %}
+    НЕ ПРОВЕРЕНО!
+  {% endcomment %} -->
+  {% if main_hotel_supplier.combobonus_set.all %}
+  <div class="price-module price-module-combo-bonuses component collapsed collapsed-bottom {% if not childpolicy or rooms|length < 1 or periods|length < 1 or meals|length < 1 %}deactivated{% endif %}">
+    <header class="module-header clearfix">
+      <h3 class="pull-left"><i class="icon-food"></i>{% trans "ComboBonuses" %}</h3>
+    </header>
+    <form action="" id="combo-bonus-form">
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>{% trans "Title" %}</th>
+              <th>{% trans "Accomodation dates" %}</th>
+              <th>{% trans "Restrictions" %}</th>
+              <th>{% trans "Special Offers $ Bonuses" %}</th>
+              <th class="checkbox-cell">
+                <div class="css-checkbox-wrap">
+                  <input type="checkbox" name="select_all_combo_bonuses" id="select_all_combo_bonuses">
+                  <label for="select_all_combo_bonuses"></label>
+                </div>
+              </th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for bonus in main_hotel_supplier.combobonus_set.all %}
+            <tr>
+              <td class="title">
+                <a class="title" href="">{% trans "ComboBonus" %} #{{ bonus.pk }}</a>
+              </td>
+              <td class="accommodation-dates">
+                <span>{{ bonus.accommodation_date_from|date:"d.m.Y" }} - 
+          {{ bonus.accommodation_date_to|date:"d.m.Y" }}</span>
+              </td>
+              <td>
+                <a class="period-restrictions" href="{% url 'add_combo_bonus_validity_terms' bonus_pk=bonus.pk %}">R</a
+              </td>
+              <td>
+                <span>
+                  {% for bird in bonus.early_birds.all %}
+                    {{ birds_ref|get_by_key:bird.pk }}{% if not forloop.last %}, {% endif %}
+                  {% endfor %}
+                  {% for simple_bonus in bonus.bonuses.all %}
+                    {{ bonuses_ref|get_by_key:simple_bonus.pk }}{% if not forloop.last %}, {% endif %}
+                  {% endfor %}
+                </span>
+              </td>
+              <td class="width-6proc checkbox-cell">
+                <div class="css-checkbox-wrap">
+                  <input type="checkbox" name="combo_bonuses" value="{{ bonus.pk }}" id="combo_bonuses-checkbox-{{ forloop.counter }}">
+                  <label for="combo_bonuses-checkbox-{{ forloop.counter }}"></label>
+                </div>
+              </td>
+              <td class="width-6proc">
+                <a class="edit-row" href="#" style="opacity: .5; cursor: default;" onclick="blockClick(event)"><i class="icon-edit2"></i></a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </form>
+  </div>
+  {% endif %}
+  <!-- end of ComboBonuses -->
+
+
+  <div class="price-module price-module-bonuses component collapsed collapsed-bottom {% if not childpolicy or rooms|length < 1 or periods|length < 1  or meals|length < 1 %}deactivated{% endif %}">
+    <header class="module-header clearfix">
+      <h3 class="pull-left">{% trans "Bonuses" %}</h3>
+      <div class="pull-right">
+        <a class="btn  btn-standard" id="add-bonus-form" href="{% url 'add_bonus_form_bootstrap' hotel_supplier_pk=main_hotel_supplier.pk %}" data-fancybox-type="ajax"><i class="fa fa-plus"></i>{% trans "Add Bonus" %}</a>
+      </div>
+    </header>
+    {% if bonuses %}
+    <form action="" id="bonuses_form">
+      {% csrf_token %}
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>{% trans "Room" %}</th>
+              <th>{% trans "Title" %}</th>
+              <th>{% trans "Booking period" %}</th>
+              <th>{% trans "Accomodation dates" %}</th>
+              <th class="no-vertical-padding">
+                {% trans "Restrictions" %}
+                <br>
+                <a class="add_restr b" href="{% url 'add_restr_bonus_bootstrap' hotel_supplier_pk=main_hotel_supplier.pk %}" data-fancybox-type="ajax">{% trans "Add" %}</a> <a class="del_all_restr b" href="{% url 'del_restr_bonus_bootstrap' hotel_supplier_pk=main_hotel_supplier.id %}">{% trans "Delete" %}</a>
+              </th>
+              <th>{% trans "Combinable" %}</th>
+              <th colspan=3></th>
+              <th class="checkbox_select_all width-6proc text-center">
+                <div class="css-checkbox-wrap">
+                  <input type="checkbox" name="select_all_bonuses" id="select_all_bonuses">
+                  <label for="select_all_bonuses"></label>
+                </div>
+              </th>       
+            </tr>
+          </thead>
+          <tbody>
+            {% for bonus in bonuses %}
+            <tr>
+              <td>
+                <strong>
+                {{ bonus.freebonus.room|default_if_none:'-' }}
+                {{ bonus.moneybonus.room|default_if_none:'-' }}
+                </strong>
+              </td>
+              <td class="title">
+                <strong>{{ bonus.tourcode }}</strong>
+                <span>(ID: {{ forloop.counter|add:birds.count }})</span>
+              </td>
+              <td>
+                <span>
+                  {% if bonus.bron_date_from or bonus.bron_date_to %}
+                    {{ bonus.bron_date_from|date:"d.m.Y" }} - {{ bonus.bron_date_to|date:"d.m.Y" }} 
+                  {% else %}
+                    >{{ bonus.bron_period }}{{ bonus.bron_period_type }}
+                  {% endif %}
+                </span>
+              </td>
+              <td class="accommodation-dates">
+                <span>{{ bonus.accommodation_date_from|date:"d.m.Y" }} - {{ bonus.accommodation_date_to|date:"d.m.Y"|plus_one_day }}</span>
+              </td>
+              <td>
+                <span>
+                {% if bonus.minstay %}Minstay={{ bonus.minstay }}<br>{% endif %}
+                {% if bonus.guests %}Guests={{ bonus.guests }}<br>{% endif %}
+                {% if bonus.accommodation %}Accommodation={{ bonus.accommodation }}<br>{% endif %}
+                {% if bonus.sr_accommodation %}SRAccommodation={{ bonus.sr_accommodation }}<br>{% endif %}
+                </span>
+                {% if bonus.countries.all %}
+                <br>
+                <strong>Countries:</strong>
+                <br>
+                <ul>
+                {% for c in bonus.countries.all %}
+                  <li>{{ c }}</li>
+                {% endfor %} 
+                </ul>
+                {% endif %} 
+              </td>
+              <td>
+                <a class="dotted-link bigger-text" href="#">
+                {% for related_bird in bonus.related_early_birds.all %}
+                  {{ birds_ref|get_by_key:related_bird.pk }}
+                {% endfor %}
+                {% for related_bonus in bonus.related_bonuses.all %}
+                  {{ bonuses_ref|get_by_key:related_bonus.pk }}, 
+                {% endfor %}
+                </a>
+              </td>
+              <td>
+                <span>
+                {% if bonus.freebonus %}
+                  {{ bonus.freebonus.text }}
+                  {% if bonus.freebonus.d_bonus %}D{% endif %}
+                  {# - {{ bonus.freebonus.room }} #}
+                {% endif %}
+                {% if bonus.mealbonus %}
+                  <small>{{ bonus.mealbonus.meal_replaced }} -> {{ bonus.mealbonus.meal_result }}</small>
+                {% endif %}
+                {% if bonus.roombonus %}
+                  <small> {{ bonus.roombonus.room_replaced }} -> {{ bonus.roombonus.room_result }}</small>
+                {% endif %}
+                {% if bonus.moneybonus %}
+                  <small>= {{ bonus.moneybonus.amount }} {{ bonus.moneybonus.exchange.char_code }}</small>
+                {% endif %}
+                </span>
+              </td>
+              <td>
+                <a href="{% url 'add_bonus_validity_terms_bootstrap' bonus_pk=bonus.pk %}" class="period-restrictions" data-fancybox-type="ajax">R</a>
+              </td>
+              <td class="width-4proc">
+                <a href="{% url 'add_bonus_comment_bootstrap' bonus_pk=bonus.pk %}" class="info-row room-comment {% if bonus.pk in comments.bonuses %}with-comment{% endif %}" data-fancybox-type="ajax"><i class="icon-info"></i></a>
+              </td>
+              <td class="width-4proc checkbox-cell">
+                <div class="css-checkbox-wrap">
+                  <input type="checkbox" name="bonuses" value="{{ bonus.pk }}" id="bonuses-checkbox-{{ forloop.counter }}">
+                  <label for="bonuses-checkbox-{{ forloop.counter }}"></label>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </form>
+    {% endif %}
+    {% if bonuses or birds %}
+    <section class="module-buttons clearfix">
+      <a href="#" class="btn btn-bright pull-left normal disabled" id="find-coincidence"><i class="icon-link"></i>{% trans "Find coincidence" %}</a>
+      <a href="#" class="btn btn-bright pull-left normal disabled" id="spo-combine"><i class="icon-link"></i>{% trans "SPO combine" %}</a>
+    </section>
+    {% endif %} 
+  </div>
+  <!-- end of Bonuses -->
+
+  {% with 1 as can_edit_cancellation_policy %}
+    {% include "hotels/cancellation_policy_bootstrap.html" %}
+  {% endwith %}
+  
+
+  <!--
+  {% comment %}
+  <div class="price-module price-module-availability component collapsed collapsed-bottom {% if not childpolicy or rooms|length < 1 or periods|length < 1 or meals|length < 1 %}deactivated{% endif %}">
+    <header class="module-header clearfix">
+      <h3><i class="icon4-pie-chart"></i>{% trans "Availability" %} / {% trans "Stop Sales" %}</h3>
+    </header>
+    <ul class="price-module-list">
+      <li><a class="create-allotment" href="{% url 'create_allotments_to_companies' hotel_supplier_pk=hotel_supplier.pk %}">{% trans "Create availability" %}</a></li>
+      <li><a class="delete-allotment" href="#" style="opacity: .5; cursor: default;" onclick="blockClick(event)">{% trans "Delete availability" %}</a></li>
+      <li><a class="stop-sales" href="{% url 'allotments_from_my_company' hotel_supplier_pk=hotel_supplier.pk %}">{% trans "Add Stop Sales" %}</a></li>
+      <li><a class="show-full-list" href="{% url 'allotments_from_my_company' hotel_supplier_pk=hotel_supplier.pk %}">{% trans "View availabilities for selected hotel" %}</a></li>
+    </ul>
+  </div>
+  {% endcomment %}
+  -->
+
+
+  <div class="price-module price-module-rate-codes component collapsed collapsed-bottom {% if not childpolicy or rooms|length < 1 or periods|length < 1 or meals|length < 1 %}deactivated{% endif %}">
+    <header class="module-header clearfix">
+      <h3><i class="icon-link2"></i>{% trans "Rate-codes" %}</h3>
+      {% if hotel_supplier.pk == main_hotel_supplier.pk and hotel_supplier.last_publicated_date and main_hotel_supplier.public_version %}
+      <p class="font-size-15">last published at {{ hotel_supplier.last_publicated_date|date:"d/m/Y" }} {{ hotel_supplier.last_publicated_date|time:"H:i" }}<p>
+      {% endif %}
+    </header>
+    <ul class="price-module-list">
+      {% if hotel_supplier.pk == main_hotel_supplier.pk %}
+        <li><a class="load-changes" id="make-public" href="{% url 'publicate_hotel_prices_bootstrap' hotel_supplier_pk=hotel_supplier.pk %}">{% trans "Load changes" %}</a></li>
+        {% if hotel_supplier.last_publicated_date and main_hotel_supplier.public_version %}
+          <li><a class="edits-journal" id="view-log" href="{% url 'hotel_supplier_history' hotel_supplier_pk=main_hotel_supplier.pk %}">{% trans "View log" %}</a></li>
+          <li><a class="hotel-info-for-partners" id="view-log" href="{% url 'hotel_supplier_public_version' hotel_supplier_pk=main_hotel_supplier.public_version.pk %}">{% trans "Hotel data for partners" %}</a></li>
+        {% endif %}
+      {% endif %}
+      <li><a class="link-to-ratecode" id="connect_to_rate_code_form"  href="{% url 'connect_to_ratecode_form_bootstrap' hotel_supplier_pk=hotel_supplier.id %}" data-fancybox-type="ajax">{% trans "Connect to rate code" %}</a></li>
+    </ul>
+    <div class="font-size-14" id='log-text'></div>
+  </div>
+  
+
+  <div class="component fixed-buttons-wrapper {% if not childpolicy or rooms|length < 1 or periods|length < 1 or meals|length < 1 %}hidden{% endif %}" id="fixed-buttons-menu">
+    <a href="{% url 'publicate_hotel_prices_bootstrap' hotel_supplier_pk=hotel_supplier.pk %}" class="btn  btn-standard  btn-fixed  full" title="" data-trigger="hover active focus" data-toggle="popover" data-placement="left" data-content="{% trans 'Load changes' %}"><i class="icon-diskette"></i>{% trans "Save" %}</a>
+    <a href="{% url 'connect_to_ratecode_form_bootstrap' hotel_supplier_pk=hotel_supplier.id %}" class="btn  btn-special  btn-fixed  full" id="connect_to_rate_code_button" data-trigger="hover active focus" data-toggle="popover" data-placement="left" data-content="{% trans 'Connect to rate code' %}" data-fancybox-type="ajax" title=""><i class="icon-eye"></i>{% trans "Connect" %}</a>
+    {% if partner_module_link %}
+    <a href="{{ partner_module_link }}" class="btn  btn-bright  btn-fixed  full"  data-trigger="hover active focus" data-toggle="popover" data-placement="left" data-content="{% trans 'To check calculation to agent/customer' %}" title=""><i class="icon-external-link"></i>{% trans "See online" %}</a>
+    {% else %}
+    <a href="{% url 'teasers:show_teaser' title_url='online_reservation_module' %}" class="btn  btn-bright  btn-fixed  full"  data-trigger="hover active focus" data-toggle="popover" data-placement="left" data-content="{% trans 'To check calculation to agent/customer' %}" title=""><i class="icon-external-link"></i>{% trans "See online" %}</a>
+    {% endif %}
+    
+  </div>
+
+  <br>
+  <br>
+
+  {% if childpolicy and rooms|length and periods|length %}
+  <p class="text-left calculation-module">
+    <a class="btn btn-bright normal" href="{% if childpolicy %}{% url 'accommodation_calculate_bootstrap' hotel_supplier_pk=hotel_supplier.pk %}{% else %}{% url 'set_agepolicy_form_bootstrap' hotel_supplier_pk=main_hotel_supplier.pk %}{% endif %}" id="calculate" data-fancybox-type="ajax">{% trans "calculate" %}</a>
+  </p>
+  <br>
+  <div id="calc_data"></div>
+  {% endif %}
+
+  <div class="component  command2  form">      
+    {{ command_form.command }}
+    <input type="button" class="btn  btn-standard" value="{% trans 'Submit' %}" id="command_submit">
+    <div id="scripts"></div>
+  </div>
+
+  {% if childpolicy and rooms|length and periods|length %}
+  <br>
+  <i class="font-size-15 selections-list">{% trans "Selected" %}:</i>
+  <ul id="selected" class="font-size-14">
+    <li id="selected-rooms"></li>
+    <li id="selected-periods"></li>
+    <li id="selected-services"></li>
+    <li id="selected-meals"></li>
+    <li id="selected-transfers"></li>
+    <li id="selected-taxes"></li>
+    <li id="selected-conditional-taxes"></li>
+    <li id="selected-staypays"></li>
+    <li id="selected-earlybirds"></li>
+    <li id="selected-bonuses"></li>
+    <li id="selected-staypay-bonuses"></li>
+    <li id="selected-cancellation-policy"></li>
+    <li id="selected-combo-bonuses"></li>
+  </ul> 
+  <br>
+  {% endif %}
+
+  <a href="{% url 'test_popup' %}" class="btn  btn-standard add-popup hidden" data-fancybox-type="ajax"><i class="fa fa-plus"></i>{% trans "Add popup" %}</a>
+  <a id="imaginary-link" href="#" style="display:none"></a>
+  
+  {% comment %}
+  {# я думаю на этих страницах пагинация вообще не нужна #}
+  <div class="container-fluid text-center">
+    <ul class="pagination">
+      {% if qs.has_previous %}
+      <li>
+        <a href="?page={{ qs.previous_page_number }}" aria-label="Previous">
+          <span aria-hidden="true">«</span>
+        </a>
+      </li>
+      {% endif %}     
+      <li class="active"><a href="">Page {{ qs.number }} of {{ qs.paginator.num_pages }}</a></li>
+      {% if qs.has_next %}
+      <li>
+        <a href="?page={{ qs.next_page_number }}" aria-label="Next">
+          <span aria-hidden="true">»</span>
+        </a>
+      </li>
+      {% endif %}
+    </ul>
+  </div>
+  {% endcomment %}
+
+</div>  
+{% endblock hotel_detail_content %}
